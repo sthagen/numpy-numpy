@@ -456,14 +456,6 @@ array_dealloc(PyArrayObject *self)
         if (PyDataType_FLAGCHK(fa->descr, NPY_ITEM_REFCOUNT)) {
             PyArray_XDECREF(self);
         }
-        /*
-         * Allocation will never be 0, see comment in ctors.c
-         * line 820
-         */
-        size_t nbytes = PyArray_NBYTES(self);
-        if (nbytes == 0) {
-            nbytes = fa->descr->elsize ? fa->descr->elsize : 1;
-        }
         if (fa->mem_handler == NULL) {
             char *env = getenv("NUMPY_WARN_IF_NO_MEM_POLICY");
             if ((env != NULL) && (strncmp(env, "1", 1) == 0)) {
@@ -474,7 +466,16 @@ array_dealloc(PyArrayObject *self)
             }
             // Guess at malloc/free ???
             free(fa->data);
-        } else {
+        }
+        else {
+            /*
+             * In theory `PyArray_NBYTES_ALLOCATED`, but differs somewhere?
+             * So instead just use the knowledge that 0 is impossible.
+             */
+            size_t nbytes = PyArray_NBYTES(self);
+            if (nbytes == 0) {
+                nbytes = 1;
+            }
             PyDataMem_UserFREE(fa->data, nbytes, fa->mem_handler);
             Py_DECREF(fa->mem_handler);
         }
@@ -621,15 +622,15 @@ array_might_be_written(PyArrayObject *obj)
 
 /*NUMPY_API
  *
- * This function does nothing if obj is writeable, and raises an exception
- * (and returns -1) if obj is not writeable. It may also do other
- * house-keeping, such as issuing warnings on arrays which are transitioning
- * to become views. Always call this function at some point before writing to
- * an array.
+ *  This function does nothing and returns 0 if *obj* is writeable.
+ *  It raises an exception and returns -1 if *obj* is not writeable.
+ *  It may also do other house-keeping, such as issuing warnings on
+ *  arrays which are transitioning to become views. Always call this
+ *  function at some point before writing to an array.
  *
- * 'name' is a name for the array, used to give better error
- * messages. Something like "assignment destination", "output array", or even
- * just "array".
+ *  *name* is a name for the array, used to give better error messages.
+ *  It can be something like "assignment destination", "output array",
+ *  or even just "array".
  */
 NPY_NO_EXPORT int
 PyArray_FailUnlessWriteable(PyArrayObject *obj, const char *name)

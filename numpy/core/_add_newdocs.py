@@ -833,7 +833,7 @@ add_newdoc('numpy.core.multiarray', 'array',
         the returned array will be forced to be a base-class array (default).
     ndmin : int, optional
         Specifies the minimum number of dimensions that the resulting
-        array should have.  Ones will be pre-pended to the shape as
+        array should have.  Ones will be prepended to the shape as
         needed to meet this requirement.
     ${ARRAY_FUNCTION_LIKE}
 
@@ -2265,10 +2265,6 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('__array_interface__',
     """Array protocol: Python side."""))
 
 
-add_newdoc('numpy.core.multiarray', 'ndarray', ('__array_finalize__',
-    """None."""))
-
-
 add_newdoc('numpy.core.multiarray', 'ndarray', ('__array_priority__',
     """Array priority."""))
 
@@ -2278,12 +2274,12 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('__array_struct__',
 
 add_newdoc('numpy.core.multiarray', 'ndarray', ('__dlpack__',
     """a.__dlpack__(*, stream=None)
-    
+
     DLPack Protocol: Part of the Array API."""))
 
 add_newdoc('numpy.core.multiarray', 'ndarray', ('__dlpack_device__',
     """a.__dlpack_device__()
-    
+
     DLPack Protocol: Part of the Array API."""))
 
 add_newdoc('numpy.core.multiarray', 'ndarray', ('base',
@@ -2392,6 +2388,12 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('dtype',
     """
     Data-type of the array's elements.
 
+    .. warning::
+
+        Setting ``arr.dtype`` is discouraged and may be deprecated in the
+        future.  Setting will replace the ``dtype`` without modifying the
+        memory (see also `ndarray.view` and `ndarray.astype`).
+
     Parameters
     ----------
     None
@@ -2402,6 +2404,8 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('dtype',
 
     See Also
     --------
+    ndarray.astype : Cast the values contained in the array to a new data-type.
+    ndarray.view : Create a view of the same data but a different data-type.
     numpy.dtype
 
     Examples
@@ -2627,6 +2631,11 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('shape',
     the array and the remaining dimensions. Reshaping an array in-place will
     fail if a copy is required.
 
+    .. warning::
+
+        Setting ``arr.shape`` is discouraged and may be deprecated in the
+        future.  Using `ndarray.reshape` is the preferred approach.
+
     Examples
     --------
     >>> x = np.array([1, 2, 3, 4])
@@ -2696,6 +2705,12 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('strides',
 
     A more detailed explanation of strides can be found in the
     "ndarray.rst" file in the NumPy reference guide.
+
+    .. warning::
+
+        Setting ``arr.strides`` is discouraged and may be deprecated in the
+        future.  `numpy.lib.stride_tricks.as_strided` should be preferred
+        to create a new view of the same data in a safer way.
 
     Notes
     -----
@@ -2788,6 +2803,14 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('__array__',
     Returns either a new reference to self if dtype is not given or a new array
     of provided data type if dtype is different from the current dtype of the
     array.
+
+    """))
+
+
+add_newdoc('numpy.core.multiarray', 'ndarray', ('__array_finalize__',
+    """a.__array_finalize__(obj, /)
+
+    Present so subclasses can call super. Does nothing.
 
     """))
 
@@ -4074,7 +4097,7 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('partition',
 
     See Also
     --------
-    numpy.partition : Return a parititioned copy of an array.
+    numpy.partition : Return a partitioned copy of an array.
     argpartition : Indirect partition.
     sort : Full sort.
 
@@ -4450,14 +4473,13 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('view',
     memory.
 
     For ``a.view(some_dtype)``, if ``some_dtype`` has a different number of
-    bytes per entry than the previous dtype (for example, converting a
-    regular array to a structured array), then the behavior of the view
-    cannot be predicted just from the superficial appearance of ``a`` (shown
-    by ``print(a)``). It also depends on exactly how ``a`` is stored in
-    memory. Therefore if ``a`` is C-ordered versus fortran-ordered, versus
-    defined as a slice or transpose, etc., the view may give different
-    results.
+    bytes per entry than the previous dtype (for example, converting a regular
+    array to a structured array), then the last axis of ``a`` must be
+    contiguous. This axis will be resized in the result.
 
+    .. versionchanged:: 1.23.0
+       Only the last axis needs to be contiguous. Previously, the entire array
+       had to be C-contiguous.
 
     Examples
     --------
@@ -4502,19 +4524,34 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('view',
     Views that change the dtype size (bytes per entry) should normally be
     avoided on arrays defined by slices, transposes, fortran-ordering, etc.:
 
-    >>> x = np.array([[1,2,3],[4,5,6]], dtype=np.int16)
-    >>> y = x[:, 0:2]
+    >>> x = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int16)
+    >>> y = x[:, ::2]
     >>> y
-    array([[1, 2],
-           [4, 5]], dtype=int16)
+    array([[1, 3],
+           [4, 6]], dtype=int16)
     >>> y.view(dtype=[('width', np.int16), ('length', np.int16)])
     Traceback (most recent call last):
         ...
-    ValueError: To change to a dtype of a different size, the array must be C-contiguous
+    ValueError: To change to a dtype of a different size, the last axis must be contiguous
     >>> z = y.copy()
     >>> z.view(dtype=[('width', np.int16), ('length', np.int16)])
-    array([[(1, 2)],
-           [(4, 5)]], dtype=[('width', '<i2'), ('length', '<i2')])
+    array([[(1, 3)],
+           [(4, 6)]], dtype=[('width', '<i2'), ('length', '<i2')])
+
+    However, views that change dtype are totally fine for arrays with a
+    contiguous last axis, even if the rest of the axes are not C-contiguous:
+
+    >>> x = np.arange(2 * 3 * 4, dtype=np.int8).reshape(2, 3, 4)
+    >>> x.transpose(1, 0, 2).view(np.int16)
+    array([[[ 256,  770],
+            [3340, 3854]],
+    <BLANKLINE>
+           [[1284, 1798],
+            [4368, 4882]],
+    <BLANKLINE>
+           [[2312, 2826],
+            [5396, 5910]]], dtype=int16)
+
     """))
 
 
@@ -5216,7 +5253,7 @@ add_newdoc('numpy.core', 'ufunc', ('accumulate',
     dtype : data-type code, optional
         The data-type used to represent the intermediate results. Defaults
         to the data-type of the output array if such is provided, or the
-        the data-type of the input array if no output array is provided.
+        data-type of the input array if no output array is provided.
     out : ndarray, None, or tuple of ndarray and None, optional
         A location into which the result is stored. If not provided or None,
         a freshly-allocated array is returned. For consistency with

@@ -24,6 +24,11 @@ NPY_RELAXED_STRIDES_CHECKING = (os.environ.get('NPY_RELAXED_STRIDES_CHECKING', "
 NPY_RELAXED_STRIDES_DEBUG = (os.environ.get('NPY_RELAXED_STRIDES_DEBUG', "0") != "0")
 NPY_RELAXED_STRIDES_DEBUG = NPY_RELAXED_STRIDES_DEBUG and NPY_RELAXED_STRIDES_CHECKING
 
+# Set NPY_DISABLE_SVML=1 in the environment to disable the vendored SVML
+# library. This option only has significance on a Linux x86_64 host and is most
+# useful to avoid improperly requiring SVML when cross compiling.
+NPY_DISABLE_SVML = (os.environ.get('NPY_DISABLE_SVML', "0") == "1")
+
 # XXX: ugly, we use a class to avoid calling twice some expensive functions in
 # config.h/numpyconfig.h. I don't see a better way because distutils force
 # config.h generation inside an Extension class, and as such sharing
@@ -68,6 +73,8 @@ def can_link_svml():
     """SVML library is supported only on x86_64 architecture and currently
     only on linux
     """
+    if NPY_DISABLE_SVML:
+        return False
     machine = platform.machine()
     system = platform.system()
     return "x86_64" in machine and system == "Linux"
@@ -992,6 +999,7 @@ def configuration(parent_package='',top_path=None):
             join('src', 'umath', 'loops_unary_fp.dispatch.c.src'),
             join('src', 'umath', 'loops_arithm_fp.dispatch.c.src'),
             join('src', 'umath', 'loops_arithmetic.dispatch.c.src'),
+            join('src', 'umath', 'loops_minmax.dispatch.c.src'),
             join('src', 'umath', 'loops_trigonometric.dispatch.c.src'),
             join('src', 'umath', 'loops_umath_fp.dispatch.c.src'),
             join('src', 'umath', 'loops_exponent_log.dispatch.c.src'),

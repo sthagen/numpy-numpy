@@ -14,6 +14,7 @@ MinusInfinity = 'PyFloat_FromDouble(-NPY_INFINITY)'
 ReorderableNone = "(Py_INCREF(Py_None), Py_None)"
 
 class docstrings:
+    @staticmethod
     def get(place):
         """
         Returns the C #definition name of docstring according
@@ -521,14 +522,14 @@ defdict = {
     Ufunc(2, 1, ReorderableNone,
           docstrings.get('numpy.core.umath.maximum'),
           'PyUFunc_SimpleUniformOperationTypeResolver',
-          TD(noobj, simd=[('avx512f', 'fd')]),
+          TD(noobj, dispatch=[('loops_minmax', ints+'fdg')]),
           TD(O, f='npy_ObjectMax')
           ),
 'minimum':
     Ufunc(2, 1, ReorderableNone,
           docstrings.get('numpy.core.umath.minimum'),
           'PyUFunc_SimpleUniformOperationTypeResolver',
-          TD(noobj, simd=[('avx512f', 'fd')]),
+          TD(noobj, dispatch=[('loops_minmax', ints+'fdg')]),
           TD(O, f='npy_ObjectMin')
           ),
 'clip':
@@ -542,6 +543,7 @@ defdict = {
     Ufunc(2, 1, ReorderableNone,
           docstrings.get('numpy.core.umath.fmax'),
           'PyUFunc_SimpleUniformOperationTypeResolver',
+          TD('fdg', dispatch=[('loops_minmax', 'fdg')]),
           TD(noobj),
           TD(O, f='npy_ObjectMax')
           ),
@@ -549,6 +551,7 @@ defdict = {
     Ufunc(2, 1, ReorderableNone,
           docstrings.get('numpy.core.umath.fmin'),
           'PyUFunc_SimpleUniformOperationTypeResolver',
+          TD('fdg', dispatch=[('loops_minmax', 'fdg')]),
           TD(noobj),
           TD(O, f='npy_ObjectMin')
           ),

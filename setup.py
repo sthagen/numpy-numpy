@@ -86,9 +86,16 @@ if os.path.exists('MANIFEST'):
 import numpy.distutils.command.sdist
 import setuptools
 if int(setuptools.__version__.split('.')[0]) >= 60:
-    raise RuntimeError(
-        "Setuptools version is '{}', version < '60.0.0' is required. "
-        "See pyproject.toml".format(setuptools.__version__))
+    # setuptools >= 60 switches to vendored distutils by default; this
+    # may break the numpy build, so make sure the stdlib version is used
+    try:
+        setuptools_use_distutils = os.environ['SETUPTOOLS_USE_DISTUTILS']
+    except KeyError:
+        os.environ['SETUPTOOLS_USE_DISTUTILS'] = "stdlib"
+    else:
+        if setuptools_use_distutils != "stdlib":
+            raise RuntimeError("setuptools versions >= '60.0.0' require "
+                    "SETUPTOOLS_USE_DISTUTILS=stdlib in the environment")
 
 # Initialize cmdclass from versioneer
 from numpy.distutils.core import numpy_cmdclass
@@ -291,7 +298,7 @@ def parse_setuppy_commands():
 
               - `pip install .`       (from a git repo or downloaded source
                                        release)
-              - `pip install numpy`   (last NumPy release on PyPi)
+              - `pip install numpy`   (last NumPy release on PyPI)
 
             """))
         return True
@@ -303,7 +310,7 @@ def parse_setuppy_commands():
 
             To install NumPy from here with reliable uninstall, we recommend
             that you use `pip install .`. To install the latest NumPy release
-            from PyPi, use `pip install numpy`.
+            from PyPI, use `pip install numpy`.
 
             For help with build/installation issues, please ask on the
             numpy-discussion mailing list.  If you are sure that you have run
@@ -371,7 +378,7 @@ def get_docs_url():
     if 'dev' in VERSION:
         return "https://numpy.org/devdocs"
     else:
-        # For releases, this URL ends up on pypi.
+        # For releases, this URL ends up on PyPI.
         # By pinning the version, users looking at old PyPI releases can get
         # to the associated docs easily.
         return "https://numpy.org/doc/{}.{}".format(MAJOR, MINOR)
@@ -421,6 +428,7 @@ def setup_package():
         entry_points={
             'console_scripts': f2py_cmds,
             'array_api': ['numpy = numpy.array_api'],
+            'pyinstaller40': ['hook-dirs = numpy:_pyinstaller_hooks_dir'],
         },
     )
 

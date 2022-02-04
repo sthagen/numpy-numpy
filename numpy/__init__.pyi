@@ -38,6 +38,7 @@ from numpy.typing import (
 
     # DTypes
     DTypeLike,
+    _DTypeLike,
     _SupportsDType,
     _VoidDTypeLike,
 
@@ -943,12 +944,22 @@ class flatiter(Generic[_NdArraySubClass]):
     @overload
     def __getitem__(
         self: flatiter[ndarray[Any, dtype[_ScalarType]]],
-        key: int | integer,
+        key: int | integer | tuple[int | integer],
     ) -> _ScalarType: ...
     @overload
     def __getitem__(
-        self, key: _ArrayLikeInt | slice | ellipsis
+        self,
+        key: _ArrayLikeInt | slice | ellipsis | tuple[_ArrayLikeInt | slice | ellipsis],
     ) -> _NdArraySubClass: ...
+    # TODO: `__setitem__` operates via `unsafe` casting rules, and can
+    # thus accept any type accepted by the relevant underlying `np.generic`
+    # constructor.
+    # This means that `value` must in reality be a supertype of `npt.ArrayLike`.
+    def __setitem__(
+        self,
+        key: _ArrayLikeInt | slice | ellipsis | tuple[_ArrayLikeInt | slice | ellipsis],
+        value: Any,
+    ) -> None: ...
     @overload
     def __array__(self: flatiter[ndarray[Any, _DType]], dtype: None = ..., /) -> ndarray[Any, _DType]: ...
     @overload
@@ -1023,6 +1034,8 @@ class _ArrayOrScalarCommon:
         axis: None = ...,
         out: None = ...,
         keepdims: L[False] = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> bool_: ...
     @overload
     def all(
@@ -1030,6 +1043,8 @@ class _ArrayOrScalarCommon:
         axis: None | _ShapeLike = ...,
         out: None = ...,
         keepdims: bool = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> Any: ...
     @overload
     def all(
@@ -1037,6 +1052,8 @@ class _ArrayOrScalarCommon:
         axis: None | _ShapeLike = ...,
         out: _NdArraySubClass = ...,
         keepdims: bool = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> _NdArraySubClass: ...
 
     @overload
@@ -1045,6 +1062,8 @@ class _ArrayOrScalarCommon:
         axis: None = ...,
         out: None = ...,
         keepdims: L[False] = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> bool_: ...
     @overload
     def any(
@@ -1052,6 +1071,8 @@ class _ArrayOrScalarCommon:
         axis: None | _ShapeLike = ...,
         out: None = ...,
         keepdims: bool = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> Any: ...
     @overload
     def any(
@@ -1059,6 +1080,8 @@ class _ArrayOrScalarCommon:
         axis: None | _ShapeLike = ...,
         out: _NdArraySubClass = ...,
         keepdims: bool = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> _NdArraySubClass: ...
 
     @overload
@@ -1241,6 +1264,8 @@ class _ArrayOrScalarCommon:
         dtype: DTypeLike = ...,
         out: None = ...,
         keepdims: bool = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> Any: ...
     @overload
     def mean(
@@ -1249,6 +1274,8 @@ class _ArrayOrScalarCommon:
         dtype: DTypeLike = ...,
         out: _NdArraySubClass = ...,
         keepdims: bool = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> _NdArraySubClass: ...
 
     @overload
@@ -1332,6 +1359,8 @@ class _ArrayOrScalarCommon:
         out: None = ...,
         ddof: int = ...,
         keepdims: bool = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> Any: ...
     @overload
     def std(
@@ -1341,6 +1370,8 @@ class _ArrayOrScalarCommon:
         out: _NdArraySubClass = ...,
         ddof: int = ...,
         keepdims: bool = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> _NdArraySubClass: ...
 
     @overload
@@ -1372,6 +1403,8 @@ class _ArrayOrScalarCommon:
         out: None = ...,
         ddof: int = ...,
         keepdims: bool = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> Any: ...
     @overload
     def var(
@@ -1381,6 +1414,8 @@ class _ArrayOrScalarCommon:
         out: _NdArraySubClass = ...,
         ddof: int = ...,
         keepdims: bool = ...,
+        *,
+        where: _ArrayLikeBool_co = ...,
     ) -> _NdArraySubClass: ...
 
 _DType = TypeVar("_DType", bound=dtype[Any])
@@ -1410,12 +1445,6 @@ _T_co = TypeVar("_T_co", covariant=True)
 _T_contra = TypeVar("_T_contra", contravariant=True)
 _2Tuple = tuple[_T, _T]
 _CastingKind = L["no", "equiv", "safe", "same_kind", "unsafe"]
-
-_DTypeLike = Union[
-    dtype[_ScalarType],
-    type[_ScalarType],
-    _SupportsDType[dtype[_ScalarType]],
-]
 
 _ArrayUInt_co = NDArray[Union[bool_, unsignedinteger[Any]]]
 _ArrayInt_co = NDArray[Union[bool_, integer[Any]]]
@@ -1451,13 +1480,13 @@ class ndarray(_ArrayOrScalarCommon, Generic[_ShapeType, _DType_co]):
     def size(self) -> int: ...
     @property
     def real(
-        self: NDArray[_SupportsReal[_ScalarType]],  # type: ignore[type-var]
+        self: ndarray[_ShapeType, dtype[_SupportsReal[_ScalarType]]],  # type: ignore[type-var]
     ) -> ndarray[_ShapeType, _dtype[_ScalarType]]: ...
     @real.setter
     def real(self, value: ArrayLike) -> None: ...
     @property
     def imag(
-        self: NDArray[_SupportsImag[_ScalarType]],  # type: ignore[type-var]
+        self: ndarray[_ShapeType, dtype[_SupportsImag[_ScalarType]]],  # type: ignore[type-var]
     ) -> ndarray[_ShapeType, _dtype[_ScalarType]]: ...
     @imag.setter
     def imag(self, value: ArrayLike) -> None: ...
@@ -3673,6 +3702,8 @@ class memmap(ndarray[_ShapeType, _DType_co]):
     ) -> Any: ...
     def flush(self) -> None: ...
 
+# TODO: Add a mypy plugin for managing functions whose output type is dependant
+# on the literal value of some sort of signature (e.g. `einsum` and `vectorize`)
 class vectorize:
     pyfunc: Callable[..., Any]
     cache: bool
@@ -3689,7 +3720,7 @@ class vectorize:
         cache: bool = ...,
         signature: None | str = ...,
     ) -> None: ...
-    def __call__(self, *args: Any, **kwargs: Any) -> NDArray[Any]: ...
+    def __call__(self, *args: Any, **kwargs: Any) -> Any: ...
 
 class poly1d:
     @property

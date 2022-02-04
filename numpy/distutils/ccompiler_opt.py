@@ -169,7 +169,7 @@ class _Config:
 
             If the compiler able to successfully compile the C file then `CCompilerOpt`
             will add a C ``#define`` for it into the main dispatch header, e.g.
-            ```#define {conf_c_prefix}_XXXX`` where ``XXXX`` is the case name in upper case.
+            ``#define {conf_c_prefix}_XXXX`` where ``XXXX`` is the case name in upper case.
 
         **NOTES**:
             * space can be used as separator with options that supports "str or list"
@@ -294,6 +294,9 @@ class _Config:
         VSX2 = dict(interest=2, implies="VSX", implies_detect=False),
         ## Power9/ISA 3.00
         VSX3 = dict(interest=3, implies="VSX2", implies_detect=False),
+        ## Power10/ISA 3.1
+        VSX4 = dict(interest=4, implies="VSX3", implies_detect=False,
+                    extra_checks="VSX4_MMA"),
         # IBM/Z
         ## VX(z13) support
         VX = dict(interest=1, headers="vecintrin.h"),
@@ -471,12 +474,16 @@ class _Config:
                 ),
                 VSX3 = dict(
                     flags="-mcpu=power9 -mtune=power9", implies_detect=False
+                ),
+                VSX4 = dict(
+                    flags="-mcpu=power10 -mtune=power10", implies_detect=False
                 )
             )
             if self.cc_is_clang:
                 partial["VSX"]["flags"]  = "-maltivec -mvsx"
                 partial["VSX2"]["flags"] = "-mpower8-vector"
                 partial["VSX3"]["flags"] = "-mpower9-vector"
+                partial["VSX4"]["flags"] = "-mpower10-vector"
 
             return partial
 

@@ -69,6 +69,7 @@ NPY_NO_EXPORT int NPY_NUMUSERTYPES = 0;
 
 #include "get_attr_string.h"
 #include "experimental_public_dtype_api.h"  /* _get_experimental_dtype_api */
+#include "textreading/readtext.h"  /* _readtext_from_file_object */
 
 #include "npy_dlpack.h"
 
@@ -1532,8 +1533,9 @@ PyArray_EquivTypenums(int typenum1, int typenum2)
 
 /*** END C-API FUNCTIONS **/
 /*
- * NPY_RELAXED_STRIDES_CHECKING: If the strides logic is changed, the
- * order specific stride setting is not necessary.
+ * NOTE: The order specific stride setting is not necessary to preserve
+ *       contiguity and could be removed.  However, this way the resulting
+ *       strides strides look better for fortran order inputs.
  */
 static NPY_STEALS_REF_TO_ARG(1) PyObject *
 _prepend_ones(PyArrayObject *arr, int nd, int ndmin, NPY_ORDER order)
@@ -4456,6 +4458,8 @@ static struct PyMethodDef array_module_methods[] = {
         METH_VARARGS | METH_KEYWORDS, NULL},
     {"_get_experimental_dtype_api", (PyCFunction)_get_experimental_dtype_api,
         METH_O, NULL},
+    {"_load_from_filelike", (PyCFunction)_load_from_filelike,
+        METH_FASTCALL | METH_KEYWORDS, NULL},
     /* from umath */
     {"frompyfunc",
         (PyCFunction) ufunc_frompyfunc,

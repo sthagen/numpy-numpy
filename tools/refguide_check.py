@@ -131,13 +131,11 @@ RST_SKIPLIST = [
     'c-info.ufunc-tutorial.rst',
     'c-info.python-as-glue.rst',
     'f2py.getting-started.rst',
+    'f2py-examples.rst',
     'arrays.nditer.cython.rst',
     # See PR 17222, these should be fixed
-    'basics.byteswapping.rst',
     'basics.dispatch.rst',
-    'basics.indexing.rst',
     'basics.subclassing.rst',
-    'basics.types.rst',
     'basics.interoperability.rst',
     'misc.rst',
 ]

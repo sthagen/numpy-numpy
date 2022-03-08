@@ -746,6 +746,40 @@ promote_and_get_info_and_ufuncimpl(PyUFuncObject *ufunc,
     }
     info = promote_and_get_info_and_ufuncimpl(ufunc,
             ops, signature, new_op_dtypes, NPY_FALSE);
+    if (info == NULL) {
+        /*
+         * NOTE: This block exists solely to support numba's DUFuncs which add
+         * new loops dynamically, so our list may get outdated.  Thus, we
+         * have to make sure that the loop exists.
+         *
+         * Before adding a new loop, ensure that it actually exists. There
+         * is a tiny chance that this would not work, but it would require an
+         * extension additionally have a custom loop getter.
+         * This check should ensure a the right error message, but in principle
+         * we could try to call the loop getter here.
+         */
+        char *types = ufunc->types;
+        npy_bool loop_exists = NPY_FALSE;
+        for (int i = 0; i < ufunc->ntypes; ++i) {
+            loop_exists = NPY_TRUE;  /* assume it exists, break if not */
+            for (int j = 0; j < ufunc->nargs; ++j) {
+                if (types[j] != new_op_dtypes[j]->type_num) {
+                    loop_exists = NPY_FALSE;
+                    break;
+                }
+            }
+            if (loop_exists) {
+                break;
+            }
+            types += ufunc->nargs;
+        }
+
+        if (loop_exists) {
+            info = add_and_return_legacy_wrapping_ufunc_loop(
+                    ufunc, new_op_dtypes, 0);
+        }
+    }
+
     for (int i = 0; i < ufunc->nargs; i++) {
         Py_XDECREF(new_op_dtypes[i]);
     }
@@ -1016,6 +1050,11 @@ logical_ufunc_promoter(PyUFuncObject *NPY_UNUSED(ufunc),
     if (signature[0] == NULL && signature[1] == NULL
             && signature[2] != NULL && signature[2]->type_num != NPY_BOOL) {
         /* bail out, this is _only_ to give future/deprecation warning! */
+        return -1;
+    }
+    if ((op_dtypes[0] != NULL && PyTypeNum_ISSTRING(op_dtypes[0]->type_num))
+            || PyTypeNum_ISSTRING(op_dtypes[1]->type_num)) {
+        /* bail out on strings: currently casting them to bool is too weird */
         return -1;
     }
 

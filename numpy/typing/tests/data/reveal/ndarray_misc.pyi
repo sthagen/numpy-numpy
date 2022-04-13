@@ -11,7 +11,7 @@ import ctypes as ct
 from typing import Any
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy._typing import NDArray
 
 class SubClass(NDArray[np.object_]): ...
 
@@ -165,7 +165,7 @@ reveal_type(AR_f8.dot(1))  # E: ndarray[Any, Any]
 reveal_type(AR_f8.dot([1]))  # E: Any
 reveal_type(AR_f8.dot(1, out=B))  # E: SubClass
 
-reveal_type(AR_f8.nonzero())  # E: tuple[ndarray[Any, dtype[{intp}]]]
+reveal_type(AR_f8.nonzero())  # E: tuple[ndarray[Any, dtype[{intp}]], ...]
 
 reveal_type(AR_f8.searchsorted(1))  # E: {intp}
 reveal_type(AR_f8.searchsorted([1]))  # E: ndarray[Any, dtype[{intp}]]

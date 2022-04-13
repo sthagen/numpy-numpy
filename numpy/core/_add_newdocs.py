@@ -384,7 +384,7 @@ add_newdoc('numpy.core', 'nditer',
     >>> luf(lambda i,j:i*i + j/2, a, b)
     array([  0.5,   1.5,   4.5,   9.5,  16.5])
 
-    If operand flags `"writeonly"` or `"readwrite"` are used the
+    If operand flags ``"writeonly"`` or ``"readwrite"`` are used the
     operands may be views into the original data with the
     `WRITEBACKIFCOPY` flag. In this case `nditer` must be used as a
     context manager or the `nditer.close` method must be called before
@@ -1573,17 +1573,38 @@ add_newdoc('numpy.core.multiarray', 'frombuffer',
         array_function_like_doc,
     ))
 
-add_newdoc('numpy.core.multiarray', '_from_dlpack',
+add_newdoc('numpy.core.multiarray', 'from_dlpack',
     """
-    _from_dlpack(x, /)
+    from_dlpack(x, /)
 
     Create a NumPy array from an object implementing the ``__dlpack__``
-    protocol.
+    protocol. Generally, the returned NumPy array is a read-only view
+    of the input object. See [1]_ and [2]_ for more details.
 
-    See Also
+    Parameters
+    ----------
+    x : object
+        A Python object that implements the ``__dlpack__`` and
+        ``__dlpack_device__`` methods.
+
+    Returns
+    -------
+    out : ndarray
+
+    References
+    ----------
+    .. [1] Array API documentation,
+       https://data-apis.org/array-api/latest/design_topics/data_interchange.html#syntax-for-data-interchange-with-dlpack
+
+    .. [2] Python specification for DLPack,
+       https://dmlc.github.io/dlpack/latest/python_spec.html
+
+    Examples
     --------
-    `Array API documentation
-    <https://data-apis.org/array-api/latest/design_topics/data_interchange.html#syntax-for-data-interchange-with-dlpack>`_
+    >>> import torch
+    >>> x = torch.arange(10)
+    >>> # create a view of the torch tensor "x" in NumPy
+    >>> y = np.from_dlpack(x)
     """)
 
 add_newdoc('numpy.core', 'fastCopyAndTranspose',

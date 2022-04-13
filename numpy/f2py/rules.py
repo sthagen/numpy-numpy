@@ -50,7 +50,7 @@ $Date: 2005/08/30 08:58:42 $
 Pearu Peterson
 
 """
-import os
+import os, sys
 import time
 import copy
 
@@ -123,6 +123,10 @@ extern \"C\" {
 #ifndef PY_SSIZE_T_CLEAN
 #define PY_SSIZE_T_CLEAN
 #endif /* PY_SSIZE_T_CLEAN */
+
+/* Unconditionally included */
+#include <Python.h>
+#include <numpy/npy_os.h>
 
 """ + gentitle("See f2py2e/cfuncs.py: includes") + """
 #includes#
@@ -1198,8 +1202,8 @@ def buildmodule(m, um):
                     break
 
         if not nb:
-            errmess(
-                'buildmodule: Could not found the body of interfaced routine "%s". Skipping.\n' % (n))
+            print(
+                'buildmodule: Could not find the body of interfaced routine "%s". Skipping.\n' % (n), file=sys.stderr)
             continue
         nb_list = [nb]
         if 'entry' in nb:

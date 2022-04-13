@@ -73,13 +73,15 @@ NPY_NO_EXPORT int NPY_NUMUSERTYPES = 0;
 
 #include "npy_dlpack.h"
 
+#include "umathmodule.h"
+
 /*
  *****************************************************************************
  **                    INCLUDE GENERATED CODE                               **
  *****************************************************************************
  */
-#include "funcs.inc"
-#include "umathmodule.h"
+/* __ufunc_api.c define is the PyUFunc_API table: */
+#include "__ufunc_api.c"
 
 NPY_NO_EXPORT int initscalarmath(PyObject *);
 NPY_NO_EXPORT int set_matmul_flags(PyObject *d); /* in ufunc_object.c */
@@ -129,12 +131,18 @@ PyArray_GetPriority(PyObject *obj, double default_)
     ret = PyArray_LookupSpecial_OnInstance(obj, "__array_priority__");
     if (ret == NULL) {
         if (PyErr_Occurred()) {
-            PyErr_Clear(); /* TODO[gh-14801]: propagate crashes during attribute access? */
+            /* TODO[gh-14801]: propagate crashes during attribute access? */
+            PyErr_Clear();
         }
         return default_;
     }
 
     priority = PyFloat_AsDouble(ret);
+    if (error_converting(priority)) {
+        /* TODO[gh-14801]: propagate crashes for bad priority? */
+        PyErr_Clear();
+        return default_;
+    }
     Py_DECREF(ret);
     return priority;
 }
@@ -4485,7 +4493,7 @@ static struct PyMethodDef array_module_methods[] = {
     {"_reload_guard", (PyCFunction)_reload_guard,
         METH_NOARGS,
         "Give a warning on reload and big warning in sub-interpreters."},
-    {"_from_dlpack", (PyCFunction)_from_dlpack,
+    {"from_dlpack", (PyCFunction)from_dlpack,
         METH_O, NULL},
     {NULL, NULL, 0, NULL}                /* sentinel */
 };
@@ -4942,8 +4950,7 @@ PyMODINIT_FUNC PyInit__multiarray_umath(void) {
         goto err;
     }
 
-    /* Load the ufunc operators into the array module's namespace */
-    if (InitOperators(d) < 0) {
+    if (initumath(m) != 0) {
         goto err;
     }
 
@@ -4951,9 +4958,6 @@ PyMODINIT_FUNC PyInit__multiarray_umath(void) {
         goto err;
     }
 
-    if (initumath(m) != 0) {
-        goto err;
-    }
     /*
      * Initialize the default PyDataMem_Handler capsule singleton.
      */

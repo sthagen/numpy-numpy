@@ -166,7 +166,7 @@ class TestComparisonDeprecations(_DeprecationTestCase):
         # For two string arrays, strings always raised the broadcasting error:
         a = np.array(['a', 'b'])
         b = np.array(['a', 'b', 'c'])
-        assert_raises(ValueError, lambda x, y: x == y, a, b)
+        assert_warns(FutureWarning, lambda x, y: x == y, a, b)
 
         # The empty list is not cast to string, and this used to pass due
         # to dtype mismatch; now (2018-06-21) it correctly leads to a
@@ -1216,6 +1216,12 @@ class TestAxisNotMAXDIMS(_DeprecationTestCase):
 
 
 class TestLoadtxtParseIntsViaFloat(_DeprecationTestCase):
+    # Deprecated 2022-07-03, NumPy 1.23
+    # This test can be removed without replacement after the deprecation.
+    # The tests:
+    #   * numpy/lib/tests/test_loadtxt.py::test_integer_signs
+    #   * lib/tests/test_loadtxt.py::test_implicit_cast_float_to_int_fails
+    # Have a warning filter that needs to be removed.
     message = r"loadtxt\(\): Parsing an integer via a float is deprecated.*"
 
     @pytest.mark.parametrize("dtype", np.typecodes["AllInteger"])

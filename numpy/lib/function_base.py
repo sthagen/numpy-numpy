@@ -3666,6 +3666,13 @@ def msort(a):
     -----
     ``np.msort(a)`` is equivalent to  ``np.sort(a, axis=0)``.
 
+    Examples
+    --------
+    >>> a = np.array([[1, 4], [3, 1]])
+    >>> np.msort(a)  # sort along the first axis
+    array([[1, 1],
+           [3, 4]])
+
     """
     b = array(a, subok=True, copy=True)
     b.sort(0)
@@ -3935,7 +3942,7 @@ def percentile(a,
         8. 'median_unbiased'
         9. 'normal_unbiased'
 
-        The first three methods are discontiuous.  NumPy further defines the
+        The first three methods are discontinuous.  NumPy further defines the
         following discontinuous variations of the default 'linear' (7.) option:
 
         * 'lower'

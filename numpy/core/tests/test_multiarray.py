@@ -1185,7 +1185,6 @@ class TestCreation:
         expected = expected * (arr.nbytes // len(expected))
         assert arr.tobytes() == expected
 
-
 class TestStructured:
     def test_subarray_field_access(self):
         a = np.zeros((3, 5), dtype=[('a', ('i4', (2, 2)))])
@@ -5020,6 +5019,8 @@ class TestPutmask:
             for types in np.sctypes.values():
                 for T in types:
                     if T not in unchecked_types:
+                        if val < 0 and np.dtype(T).kind == "u":
+                            val = np.iinfo(T).max - 99
                         self.tst_basic(x.copy().astype(T), T, mask, val)
 
             # Also test string of a length which uses an untypical length
@@ -6721,7 +6722,7 @@ class TestDot:
 
     @pytest.mark.slow
     @pytest.mark.parametrize("dtype", [np.float64, np.complex128])
-    @requires_memory(free_bytes=9*10**9)  # complex case needs 8GiB+
+    @requires_memory(free_bytes=18e9)  # complex case needs 18GiB+
     def test_huge_vectordot(self, dtype):
         # Large vector multiplications are chunked with 32bit BLAS
         # Test that the chunking does the right thing, see also gh-22262
@@ -7234,9 +7235,8 @@ class TestInner:
                    [2630, 2910, 3190]],
 
                   [[2198, 2542, 2886],
-                   [3230, 3574, 3918]]]],
-                dtype=dt
-            )
+                   [3230, 3574, 3918]]]]
+            ).astype(dt)
             assert_equal(np.inner(a, b), desired)
             assert_equal(np.inner(b, a).transpose(2,3,0,1), desired)
 

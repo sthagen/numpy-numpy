@@ -74,7 +74,7 @@ def _aligned_zeros(shape, dtype=float, order="C", align=None):
 
 
 class TestFlags:
-    def setup(self):
+    def setup_method(self):
         self.a = np.arange(10)
 
     def test_writeable(self):
@@ -275,7 +275,7 @@ class TestHash:
 
 
 class TestAttributes:
-    def setup(self):
+    def setup_method(self):
         self.one = np.arange(10)
         self.two = np.arange(20).reshape(4, 5)
         self.three = np.arange(60, dtype=np.float64).reshape(2, 5, 6)
@@ -564,18 +564,18 @@ class TestAssignment:
             finally:
                 set_string_function(None, repr=False)
 
-        a1d = np.array([u'test'])
-        a0d = np.array(u'done')
-        with inject_str(u'bad'):
+        a1d = np.array(['test'])
+        a0d = np.array('done')
+        with inject_str('bad'):
             a1d[0] = a0d  # previously this would invoke __str__
-        assert_equal(a1d[0], u'done')
+        assert_equal(a1d[0], 'done')
 
         # this would crash for the same reason
-        np.array([np.array(u'\xe5\xe4\xf6')])
+        np.array([np.array('\xe5\xe4\xf6')])
 
     def test_stringlike_empty_list(self):
         # gh-8902
-        u = np.array([u'done'])
+        u = np.array(['done'])
         b = np.array([b'done'])
 
         class bad_sequence:
@@ -652,7 +652,7 @@ class TestDtypedescr:
 
 
 class TestZeroRank:
-    def setup(self):
+    def setup_method(self):
         self.d = np.array(0), np.array('x', object)
 
     def test_ellipsis_subscript(self):
@@ -756,7 +756,7 @@ class TestZeroRank:
 
 
 class TestScalarIndexing:
-    def setup(self):
+    def setup_method(self):
         self.d = np.array([0, 1])[0]
 
     def test_ellipsis_subscript(self):
@@ -4404,8 +4404,8 @@ class TestStringCompare:
         assert_array_equal(g1 >= g2, [x >= g2 for x in g1])
 
     def test_unicode(self):
-        g1 = np.array([u"This", u"is", u"example"])
-        g2 = np.array([u"This", u"was", u"example"])
+        g1 = np.array(["This", "is", "example"])
+        g2 = np.array(["This", "was", "example"])
         assert_array_equal(g1 == g2, [g1[i] == g2[i] for i in [0, 1, 2]])
         assert_array_equal(g1 != g2, [g1[i] != g2[i] for i in [0, 1, 2]])
         assert_array_equal(g1 <= g2, [g1[i] <= g2[i] for i in [0, 1, 2]])
@@ -5701,7 +5701,7 @@ class TestFromBuffer:
             mm.close()
 
 class TestFlat:
-    def setup(self):
+    def setup_method(self):
         a0 = np.arange(20.0)
         a = a0.reshape(4, 5)
         a0.shape = (4, 5)
@@ -5909,17 +5909,18 @@ class TestRecord:
     def test_fromarrays_unicode(self):
         # A single name string provided to fromarrays() is allowed to be unicode
         # on both Python 2 and 3:
-        x = np.core.records.fromarrays([[0], [1]], names=u'a,b', formats=u'i4,i4')
+        x = np.core.records.fromarrays(
+            [[0], [1]], names='a,b', formats='i4,i4')
         assert_equal(x['a'][0], 0)
         assert_equal(x['b'][0], 1)
 
     def test_unicode_order(self):
         # Test that we can sort with order as a unicode field name in both Python 2 and
         # 3:
-        name = u'b'
+        name = 'b'
         x = np.array([1, 3, 2], dtype=[(name, int)])
         x.sort(order=name)
-        assert_equal(x[u'b'], np.array([1, 2, 3]))
+        assert_equal(x['b'], np.array([1, 2, 3]))
 
     def test_field_names(self):
         # Test unicode and 8-bit / byte strings can be used
@@ -5959,8 +5960,8 @@ class TestRecord:
         assert_equal(b[['f1', 'f3']][0].tolist(), (2, (1,)))
 
         # non-ascii unicode field indexing is well behaved
-        assert_raises(ValueError, a.__setitem__, u'\u03e0', 1)
-        assert_raises(ValueError, a.__getitem__, u'\u03e0')
+        assert_raises(ValueError, a.__setitem__, '\u03e0', 1)
+        assert_raises(ValueError, a.__getitem__, '\u03e0')
 
     def test_record_hash(self):
         a = np.array([(1, 2), (1, 2)], dtype='i1,i2')
@@ -6024,7 +6025,7 @@ class TestStats:
 
     funcs = [_mean, _var, _std]
 
-    def setup(self):
+    def setup_method(self):
         np.random.seed(range(3))
         self.rmat = np.random.random((4, 5))
         self.cmat = self.rmat + 1j * self.rmat
@@ -6451,7 +6452,7 @@ class TestVdot:
 
 
 class TestDot:
-    def setup(self):
+    def setup_method(self):
         np.random.seed(128)
         self.A = np.random.rand(4, 2)
         self.b1 = np.random.rand(2, 1)
@@ -7242,7 +7243,7 @@ class TestInner:
 
 
 class TestChoose:
-    def setup(self):
+    def setup_method(self):
         self.x = 2*np.ones((3,), dtype=int)
         self.y = 3*np.ones((3,), dtype=int)
         self.x2 = 2*np.ones((2, 3), dtype=int)
@@ -7272,7 +7273,7 @@ class TestChoose:
 
 
 class TestRepeat:
-    def setup(self):
+    def setup_method(self):
         self.m = np.array([1, 2, 3, 4, 5, 6])
         self.m_rect = self.m.reshape((2, 3))
 
@@ -8653,7 +8654,7 @@ class TestConversion:
             # gh-9972
             assert_equal(4, int_func(np.array('4')))
             assert_equal(5, int_func(np.bytes_(b'5')))
-            assert_equal(6, int_func(np.unicode_(u'6')))
+            assert_equal(6, int_func(np.unicode_('6')))
 
             # The delegation of int() to __trunc__ was deprecated in
             # Python 3.11.
@@ -9395,7 +9396,7 @@ class TestArrayFinalize:
 def test_orderconverter_with_nonASCII_unicode_ordering():
     # gh-7475
     a = np.arange(5)
-    assert_raises(ValueError, a.flatten, order=u'\xe2')
+    assert_raises(ValueError, a.flatten, order='\xe2')
 
 
 def test_equal_override():

@@ -111,8 +111,8 @@ legacy_getitem_using_DType(void *data, void *arr)
  * from the user in the future and more could get defaults for compatibility.
  */
 PyArray_ArrFuncs default_funcs = {
+        .getitem = &legacy_getitem_using_DType,
         .setitem = &legacy_setitem_using_DType,
-        .getitem = &legacy_getitem_using_DType
 };
 
 
@@ -206,6 +206,12 @@ PyArrayInitDTypeMeta_FromSpec(
         PyErr_SetString(PyExc_RuntimeError,
                 "A DType must provide a getitem/setitem (there may be an "
                 "exception here in the future if no scalar type is provided)");
+        return -1;
+    }
+
+    if (NPY_DT_SLOTS(DType)->ensure_canonical == NULL) {
+        PyErr_SetString(PyExc_RuntimeError,
+                        "A DType must provide an ensure_canonical implementation.");
         return -1;
     }
 

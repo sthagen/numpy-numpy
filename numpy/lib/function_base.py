@@ -3689,7 +3689,7 @@ def msort(a):
     return b
 
 
-def _ureduce(a, func, **kwargs):
+def _ureduce(a, func, keepdims=False, **kwargs):
     """
     Internal Function.
     Call `func` with `a` as first argument swapping the axes to use extended
@@ -3717,13 +3717,20 @@ def _ureduce(a, func, **kwargs):
     """
     a = np.asanyarray(a)
     axis = kwargs.get('axis', None)
+    out = kwargs.get('out', None)
+
+    if keepdims is np._NoValue:
+        keepdims = False
+
+    nd = a.ndim
     if axis is not None:
-        keepdim = list(a.shape)
-        nd = a.ndim
         axis = _nx.normalize_axis_tuple(axis, nd)
 
-        for ax in axis:
-            keepdim[ax] = 1
+        if keepdims:
+            if out is not None:
+                index_out = tuple(
+                    0 if i in axis else slice(None) for i in range(nd))
+                kwargs['out'] = out[(Ellipsis, ) + index_out]
 
         if len(axis) == 1:
             kwargs['axis'] = axis[0]
@@ -3736,12 +3743,27 @@ def _ureduce(a, func, **kwargs):
             # merge reduced axis
             a = a.reshape(a.shape[:nkeep] + (-1,))
             kwargs['axis'] = -1
-        keepdim = tuple(keepdim)
     else:
-        keepdim = (1,) * a.ndim
+        if keepdims:
+            if out is not None:
+                index_out = (0, ) * nd
+                kwargs['out'] = out[(Ellipsis, ) + index_out]
 
     r = func(a, **kwargs)
-    return r, keepdim
+
+    if out is not None:
+        return out
+
+    if keepdims:
+        if axis is None:
+            index_r = (np.newaxis, ) * nd
+        else:
+            index_r = tuple(
+                np.newaxis if i in axis else slice(None)
+                for i in range(nd))
+        r = r[(Ellipsis, ) + index_r]
+
+    return r
 
 
 def _median_dispatcher(
@@ -3831,12 +3853,8 @@ def median(a, axis=None, out=None, overwrite_input=False, keepdims=False):
     >>> assert not np.all(a==b)
 
     """
-    r, k = _ureduce(a, func=_median, axis=axis, out=out,
+    return _ureduce(a, func=_median, keepdims=keepdims, axis=axis, out=out,
                     overwrite_input=overwrite_input)
-    if keepdims:
-        return r.reshape(k)
-    else:
-        return r
 
 
 def _median(a, axis=None, out=None, overwrite_input=False):
@@ -3916,7 +3934,7 @@ def percentile(a,
 
     Parameters
     ----------
-    a : array_like
+    a : array_like of real numbers
         Input array or object that can be converted to an array.
     q : array_like of float
         Percentile or sequence of percentiles to compute, which must be between
@@ -4167,7 +4185,8 @@ def percentile(a,
             xlabel='Percentile',
             ylabel='Estimated percentile value',
             yticks=a)
-        ax.legend()
+        ax.legend(bbox_to_anchor=(1.03, 1))
+        plt.tight_layout()
         plt.show()
 
     References
@@ -4180,6 +4199,11 @@ def percentile(a,
     if interpolation is not None:
         method = _check_interpolation_as_method(
             method, interpolation, "percentile")
+
+    a = np.asanyarray(a)
+    if a.dtype.kind == "c":
+        raise TypeError("a must be an array of real numbers")
+
     q = np.true_divide(q, 100)
     q = asanyarray(q)  # undo any decay that the ufunc performed (see gh-13105)
     if not _quantile_is_valid(q):
@@ -4210,7 +4234,7 @@ def quantile(a,
 
     Parameters
     ----------
-    a : array_like
+    a : array_like of real numbers
         Input array or object that can be converted to an array.
     q : array_like of float
         Quantile or sequence of quantiles to compute, which must be between
@@ -4437,6 +4461,10 @@ def quantile(a,
         method = _check_interpolation_as_method(
             method, interpolation, "quantile")
 
+    a = np.asanyarray(a)
+    if a.dtype.kind == "c":
+        raise TypeError("a must be an array of real numbers")
+
     q = np.asanyarray(q)
     if not _quantile_is_valid(q):
         raise ValueError("Quantiles must be in the range [0, 1]")
@@ -4452,17 +4480,14 @@ def _quantile_unchecked(a,
                         method="linear",
                         keepdims=False):
     """Assumes that q is in [0, 1], and is an ndarray"""
-    r, k = _ureduce(a,
+    return _ureduce(a,
                     func=_quantile_ureduce_func,
                     q=q,
+                    keepdims=keepdims,
                     axis=axis,
                     out=out,
                     overwrite_input=overwrite_input,
                     method=method)
-    if keepdims:
-        return r.reshape(q.shape + k)
-    else:
-        return r
 
 
 def _quantile_is_valid(q):
@@ -4812,25 +4837,41 @@ def trapz(y, x=None, dx=1.0, axis=-1):
 
     Examples
     --------
-    >>> np.trapz([1,2,3])
+    Use the trapezoidal rule on evenly spaced points:
+
+    >>> np.trapz([1, 2, 3])
     4.0
-    >>> np.trapz([1,2,3], x=[4,6,8])
+
+    The spacing between sample points can be selected by either the
+    ``x`` or ``dx`` arguments:
+
+    >>> np.trapz([1, 2, 3], x=[4, 6, 8])
     8.0
-    >>> np.trapz([1,2,3], dx=2)
+    >>> np.trapz([1, 2, 3], dx=2)
     8.0
 
-    Using a decreasing `x` corresponds to integrating in reverse:
+    Using a decreasing ``x`` corresponds to integrating in reverse:
 
-    >>> np.trapz([1,2,3], x=[8,6,4])
+    >>> np.trapz([1, 2, 3], x=[8, 6, 4])
     -8.0
 
-    More generally `x` is used to integrate along a parametric curve.
-    This finds the area of a circle, noting we repeat the sample which closes
+    More generally ``x`` is used to integrate along a parametric curve. We can
+    estimate the integral :math:`\int_0^1 x^2 = 1/3` using:
+
+    >>> x = np.linspace(0, 1, num=50)
+    >>> y = x**2
+    >>> np.trapz(y, x)
+    0.33340274885464394
+
+    Or estimate the area of a circle, noting we repeat the sample which closes
     the curve:
 
     >>> theta = np.linspace(0, 2 * np.pi, num=1000, endpoint=True)
     >>> np.trapz(np.cos(theta), x=np.sin(theta))
     3.141571941375841
+
+    ``np.trapz`` can be applied along a specified axis to do multiple
+    computations in one call:
 
     >>> a = np.arange(6).reshape(2, 3)
     >>> a

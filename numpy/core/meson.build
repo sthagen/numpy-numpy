@@ -133,7 +133,7 @@ mandatory_funcs = [
   'floor', 'ceil', 'sqrt', 'log10', 'log', 'exp', 'asin',
   'acos', 'atan', 'fmod', 'modf', 'frexp', 'ldexp',
   'expm1', 'log1p', 'acosh', 'asinh', 'atanh',
-  'rint', 'trunc', 'exp2', 
+  'rint', 'trunc', 'exp2',
   'copysign', 'nextafter', 'strtoll', 'strtoull', 'cbrt',
   'log2', 'pow', 'hypot', 'atan2',
   'csin', 'csinh', 'ccos', 'ccosh', 'ctan', 'ctanh',
@@ -461,6 +461,9 @@ npymath_sources = [
   npy_math_internal_h,
   'src/npymath/halffloat.c',
   'src/npymath/npy_math.c',
+  # Remove this `arm64_exports.c` file once scipy macos arm64 build correctly
+  # links to the arm64 npymath library, see gh-22673
+  'src/npymath/arm64_exports.c',
 ]
 npymath_lib = static_library('npymath',
   npymath_sources,
@@ -534,7 +537,7 @@ src_umath_doc_h = custom_target('_umath_doc_generated',
 )
 
 src_numpy_api = custom_target('__multiarray_api',
-  output : ['__multiarray_api.c', '__multiarray_api.h', 'multiarray_api.txt'],
+  output : ['__multiarray_api.c', '__multiarray_api.h'],
   input : 'code_generators/generate_numpy_api.py',
   command: [py, '@INPUT@', '-o', '@OUTDIR@', '--ignore', src_umath_api_c],
   install: true,  # NOTE: setup.py build installs all, but just need .h?
@@ -542,7 +545,7 @@ src_numpy_api = custom_target('__multiarray_api',
 )
 
 src_ufunc_api = custom_target('__ufunc_api',
-  output : ['__ufunc_api.c', '__ufunc_api.h', 'ufunc_api.txt'],
+  output : ['__ufunc_api.c', '__ufunc_api.h'],
   input : 'code_generators/generate_ufunc_api.py',
   command: [py, '@INPUT@', '-o', '@OUTDIR@'],
   install: true,  # NOTE: setup.py build installs all, but just need .h?
@@ -743,10 +746,12 @@ src_umath = [
   src_file.process('src/umath/loops_comparison.dispatch.c.src'),
   src_file.process('src/umath/loops_exponent_log.dispatch.c.src'),
   src_file.process('src/umath/loops_hyperbolic.dispatch.c.src'),
+  src_file.process('src/umath/loops_logical.dispatch.c.src'),
   src_file.process('src/umath/loops_minmax.dispatch.c.src'),
   src_file.process('src/umath/loops_modulo.dispatch.c.src'),
   src_file.process('src/umath/loops_trigonometric.dispatch.c.src'),
   src_file.process('src/umath/loops_umath_fp.dispatch.c.src'),
+  src_file.process('src/umath/loops_unary.dispatch.c.src'),
   src_file.process('src/umath/loops_unary_fp.dispatch.c.src'),
   src_file.process('src/umath/matmul.c.src'),
   src_file.process('src/umath/matmul.h.src'),
@@ -863,9 +868,9 @@ py.extension_module('_simd',
     src_file.process('src/_simd/_simd.dispatch.c.src'),
   ],
   c_args: c_args_common,
-  #include_directories: ['src/multiarray', 'src/npymath'],
-  include_directories: ['src/_simd'],
+  include_directories: ['src/_simd', 'src/npymath'],
   dependencies: np_core_dep,
+  link_with: npymath_lib,
   install: true,
   subdir: 'numpy/core',
 )

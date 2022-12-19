@@ -107,6 +107,7 @@ import sys
 import warnings
 
 from ._globals import _NoValue, _CopyMode
+# These exceptions were moved in 1.25 and are hidden from __dir__()
 from .exceptions import (
     ComplexWarning, ModuleDeprecationWarning, VisibleDeprecationWarning,
     TooHardError, AxisError)
@@ -130,7 +131,7 @@ else:
         raise ImportError(msg) from e
 
     __all__ = [
-        'ModuleDeprecationWarning', 'VisibleDeprecationWarning',
+        'exceptions', 'ModuleDeprecationWarning', 'VisibleDeprecationWarning',
         'ComplexWarning', 'TooHardError', 'AxisError']
 
     # mapping of {name: (value, deprecation_msg)}
@@ -142,6 +143,7 @@ else:
     from . import core
     from .core import *
     from . import compat
+    from . import exceptions
     from . import lib
     # NOTE: to be revisited following future namespace cleanup.
     # See gh-14454 and gh-15672 for discussion.
@@ -289,6 +291,9 @@ else:
         public_symbols = globals().keys() | {'Tester', 'testing'}
         public_symbols -= {
             "core", "matrixlib",
+            # These were moved in 1.25 and may be deprecated eventually:
+            "ModuleDeprecationWarning", "VisibleDeprecationWarning",
+            "ComplexWarning", "TooHardError", "AxisError"
         }
         return list(public_symbols)
 

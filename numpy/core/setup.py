@@ -630,11 +630,11 @@ def configuration(parent_package='',top_path=None):
             try:
                 m = __import__(module_name)
                 log.info('executing %s', script)
-                h_file, c_file, doc_file = m.generate_api(os.path.join(build_dir, header_dir))
+                h_file, c_file = m.generate_api(os.path.join(build_dir, header_dir))
             finally:
                 del sys.path[0]
             config.add_data_files((header_dir, h_file),
-                                  (header_dir, doc_file))
+                                 )
             return (h_file,)
         return generate_api
 
@@ -1005,9 +1005,11 @@ def configuration(parent_package='',top_path=None):
             join('src', 'umath', 'loops.h.src'),
             join('src', 'umath', 'loops_utils.h.src'),
             join('src', 'umath', 'loops.c.src'),
+            join('src', 'umath', 'loops_unary.dispatch.c.src'),
             join('src', 'umath', 'loops_unary_fp.dispatch.c.src'),
             join('src', 'umath', 'loops_arithm_fp.dispatch.c.src'),
             join('src', 'umath', 'loops_arithmetic.dispatch.c.src'),
+            join('src', 'umath', 'loops_logical.dispatch.c.src'),
             join('src', 'umath', 'loops_minmax.dispatch.c.src'),
             join('src', 'umath', 'loops_trigonometric.dispatch.c.src'),
             join('src', 'umath', 'loops_umath_fp.dispatch.c.src'),
@@ -1120,23 +1122,26 @@ def configuration(parent_package='',top_path=None):
     #                        SIMD module                                  #
     #######################################################################
 
-    config.add_extension('_simd', sources=[
-        join('src', 'common', 'npy_cpu_features.c'),
-        join('src', '_simd', '_simd.c'),
-        join('src', '_simd', '_simd_inc.h.src'),
-        join('src', '_simd', '_simd_data.inc.src'),
-        join('src', '_simd', '_simd.dispatch.c.src'),
-    ], depends=[
-        join('src', 'common', 'npy_cpu_dispatch.h'),
-        join('src', 'common', 'simd', 'simd.h'),
-        join('src', '_simd', '_simd.h'),
-        join('src', '_simd', '_simd_inc.h.src'),
-        join('src', '_simd', '_simd_data.inc.src'),
-        join('src', '_simd', '_simd_arg.inc'),
-        join('src', '_simd', '_simd_convert.inc'),
-        join('src', '_simd', '_simd_easyintrin.inc'),
-        join('src', '_simd', '_simd_vector.inc'),
-    ])
+    config.add_extension('_simd',
+        sources=[
+            join('src', 'common', 'npy_cpu_features.c'),
+            join('src', '_simd', '_simd.c'),
+            join('src', '_simd', '_simd_inc.h.src'),
+            join('src', '_simd', '_simd_data.inc.src'),
+            join('src', '_simd', '_simd.dispatch.c.src'),
+        ], depends=[
+            join('src', 'common', 'npy_cpu_dispatch.h'),
+            join('src', 'common', 'simd', 'simd.h'),
+            join('src', '_simd', '_simd.h'),
+            join('src', '_simd', '_simd_inc.h.src'),
+            join('src', '_simd', '_simd_data.inc.src'),
+            join('src', '_simd', '_simd_arg.inc'),
+            join('src', '_simd', '_simd_convert.inc'),
+            join('src', '_simd', '_simd_easyintrin.inc'),
+            join('src', '_simd', '_simd_vector.inc'),
+        ],
+        libraries=['npymath']
+    )
 
     config.add_subpackage('tests')
     config.add_data_dir('tests/data')

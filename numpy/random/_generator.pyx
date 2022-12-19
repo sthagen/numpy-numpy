@@ -380,6 +380,22 @@ cdef class Generator:
         out : ndarray or scalar
             Drawn samples from the parameterized exponential distribution.
 
+        Examples
+        --------
+        A real world example: Assume a company has 10000 customer support 
+        agents and the average time between customer calls is 4 minutes.
+
+        >>> n = 10000
+        >>> time_between_calls = np.random.default_rng().exponential(scale=4, size=n)
+
+        What is the probability that a customer will call in the next 
+        4 to 5 minutes? 
+        
+        >>> x = ((time_between_calls < 5).sum())/n 
+        >>> y = ((time_between_calls < 4).sum())/n
+        >>> x-y
+        0.08 # may vary
+
         References
         ----------
         .. [1] Peyton Z. Peebles Jr., "Probability, Random Variables and
@@ -4745,7 +4761,7 @@ cdef class Generator:
         >>> rng.permutation("abc")
         Traceback (most recent call last):
             ...
-        numpy.AxisError: axis 0 is out of bounds for array of dimension 0
+        numpy.exceptions.AxisError: axis 0 is out of bounds for array of dimension 0
 
         >>> arr = np.arange(9).reshape((3, 3))
         >>> rng.permutation(arr, axis=1)

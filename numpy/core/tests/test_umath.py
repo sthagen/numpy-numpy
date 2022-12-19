@@ -21,6 +21,15 @@ from numpy.testing import (
     )
 from numpy.testing._private.utils import _glibc_older_than
 
+UFUNCS = [obj for obj in np.core.umath.__dict__.values()
+         if isinstance(obj, np.ufunc)]
+
+UFUNCS_UNARY = [
+    uf for uf in UFUNCS if uf.nin == 1
+]
+UFUNCS_UNARY_FP = [
+    uf for uf in UFUNCS_UNARY if 'f->f' in uf.types
+]
 
 def interesting_binop_operands(val1, val2, dtype):
     """
@@ -1069,8 +1078,9 @@ class TestPower:
                 assert_complex_equal(np.power(zero, -p), cnan)
             assert_complex_equal(np.power(zero, -1+0.2j), cnan)
 
-    # Testing 0^{Non-zero} issue 18378
+    @pytest.mark.skipif(IS_WASM, reason="fp errors don't work in wasm")
     def test_zero_power_nonzero(self):
+        # Testing 0^{Non-zero} issue 18378
         zero = np.array([0.0+0.0j])
         cnan = np.array([complex(np.nan, np.nan)])
 
@@ -1085,7 +1095,7 @@ class TestPower:
         assert_complex_equal(np.power(zero, 1+1j), zero)
         assert_complex_equal(np.power(zero, 1+0j), zero)
         assert_complex_equal(np.power(zero, 1-1j), zero)
-        #Complex powers will negative real part or 0 (provided imaginary 
+        #Complex powers will negative real part or 0 (provided imaginary
         # part is not zero) will generate a NAN and hence a RUNTIME warning
         with pytest.warns(expected_warning=RuntimeWarning) as r:
             assert_complex_equal(np.power(zero, -1+1j), cnan)
@@ -1630,15 +1640,74 @@ class TestSpecialFloats:
                                   np.array(value, dtype=dt))
 
     # test to ensure no spurious FP exceptions are raised due to SIMD
-    def test_spurious_fpexception(self):
-        for dt in ['e', 'f', 'd']:
-            arr = np.array([1.0, 2.0], dtype=dt)
-            with assert_no_warnings():
-                np.log(arr)
-                np.log2(arr)
-                np.log10(arr)
-                np.arccosh(arr)
+    INF_INVALID_ERR = [
+        np.cos, np.sin, np.tan, np.arccos, np.arcsin, np.spacing, np.arctanh
+    ]
+    NEG_INVALID_ERR = [
+        np.log, np.log2, np.log10, np.log1p, np.sqrt, np.arccosh,
+        np.arctanh
+    ]
+    ONE_INVALID_ERR = [
+        np.arctanh,
+    ]
+    LTONE_INVALID_ERR = [
+        np.arccosh,
+    ]
+    BYZERO_ERR = [
+        np.log, np.log2, np.log10, np.reciprocal, np.arccosh
+    ]
 
+    @pytest.mark.parametrize("ufunc", UFUNCS_UNARY_FP)
+    @pytest.mark.parametrize("dtype", ('e', 'f', 'd'))
+    @pytest.mark.parametrize("data, escape", (
+        ([0.03], LTONE_INVALID_ERR),
+        ([0.03]*32, LTONE_INVALID_ERR),
+        # neg
+        ([-1.0], NEG_INVALID_ERR),
+        ([-1.0]*32, NEG_INVALID_ERR),
+        # flat
+        ([1.0], ONE_INVALID_ERR),
+        ([1.0]*32, ONE_INVALID_ERR),
+        # zero
+        ([0.0], BYZERO_ERR),
+        ([0.0]*32, BYZERO_ERR),
+        ([-0.0], BYZERO_ERR),
+        ([-0.0]*32, BYZERO_ERR),
+        # nan
+        ([0.5, 0.5, 0.5, np.nan], LTONE_INVALID_ERR),
+        ([0.5, 0.5, 0.5, np.nan]*32, LTONE_INVALID_ERR),
+        ([np.nan, 1.0, 1.0, 1.0], ONE_INVALID_ERR),
+        ([np.nan, 1.0, 1.0, 1.0]*32, ONE_INVALID_ERR),
+        ([np.nan], []),
+        ([np.nan]*32, []),
+        # inf
+        ([0.5, 0.5, 0.5, np.inf], INF_INVALID_ERR + LTONE_INVALID_ERR),
+        ([0.5, 0.5, 0.5, np.inf]*32, INF_INVALID_ERR + LTONE_INVALID_ERR),
+        ([np.inf, 1.0, 1.0, 1.0], INF_INVALID_ERR),
+        ([np.inf, 1.0, 1.0, 1.0]*32, INF_INVALID_ERR),
+        ([np.inf], INF_INVALID_ERR),
+        ([np.inf]*32, INF_INVALID_ERR),
+        # ninf
+        ([0.5, 0.5, 0.5, -np.inf],
+         NEG_INVALID_ERR + INF_INVALID_ERR + LTONE_INVALID_ERR),
+        ([0.5, 0.5, 0.5, -np.inf]*32,
+         NEG_INVALID_ERR + INF_INVALID_ERR + LTONE_INVALID_ERR),
+        ([-np.inf, 1.0, 1.0, 1.0], NEG_INVALID_ERR + INF_INVALID_ERR),
+        ([-np.inf, 1.0, 1.0, 1.0]*32, NEG_INVALID_ERR + INF_INVALID_ERR),
+        ([-np.inf], NEG_INVALID_ERR + INF_INVALID_ERR),
+        ([-np.inf]*32, NEG_INVALID_ERR + INF_INVALID_ERR),
+    ))
+    def test_unary_spurious_fpexception(self, ufunc, dtype, data, escape):
+        if escape and ufunc in escape:
+            return
+        # FIXME: NAN raises FP invalid exception:
+        #  - ceil/float16 on MSVC:32-bit
+        #  - spacing/float16 on almost all platforms
+        if ufunc in (np.spacing, np.ceil) and dtype == 'e':
+            return
+        array = np.array(data, dtype=dtype)
+        with assert_no_warnings():
+            ufunc(array)
 
 class TestFPClass:
     @pytest.mark.parametrize("stride", [-4,-2,-1,1,2,4])
@@ -2633,6 +2702,35 @@ class TestAbsoluteNegative:
         np.negative(np.ones_like(d), out=d)
         np.abs(d, out=d)
         np.abs(np.ones_like(d), out=d)
+
+    @pytest.mark.parametrize("dtype", ['d', 'f', 'int32', 'int64'])
+    @pytest.mark.parametrize("big", [True, False])
+    def test_noncontiguous(self, dtype, big):
+        data = np.array([-1.0, 1.0, -0.0, 0.0, 2.2251e-308, -2.5, 2.5, -6,
+                            6, -2.2251e-308, -8, 10], dtype=dtype)
+        expect = np.array([1.0, -1.0, 0.0, -0.0, -2.2251e-308, 2.5, -2.5, 6,
+                            -6, 2.2251e-308, 8, -10], dtype=dtype)
+        if big:
+            data = np.repeat(data, 10)
+            expect = np.repeat(expect, 10)
+        out = np.ndarray(data.shape, dtype=dtype)
+        ncontig_in = data[1::2]
+        ncontig_out = out[1::2]
+        contig_in = np.array(ncontig_in)
+        # contig in, contig out
+        assert_array_equal(np.negative(contig_in), expect[1::2])
+        # contig in, ncontig out
+        assert_array_equal(np.negative(contig_in, out=ncontig_out),
+                                expect[1::2])
+        # ncontig in, contig out
+        assert_array_equal(np.negative(ncontig_in), expect[1::2])
+        # ncontig in, ncontig out
+        assert_array_equal(np.negative(ncontig_in, out=ncontig_out),
+                                expect[1::2])
+        # contig in, contig out, nd stride
+        data_split = np.array(np.array_split(data, 2))
+        expect_split = np.array(np.array_split(expect, 2))
+        assert_equal(np.negative(data_split), expect_split)
 
 
 class TestPositive:

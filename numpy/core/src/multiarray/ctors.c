@@ -20,6 +20,7 @@
 #include "common.h"
 #include "ctors.h"
 #include "convert_datatype.h"
+#include "dtypemeta.h"
 #include "shape.h"
 #include "npy_buffer.h"
 #include "lowlevel_strided_loops.h"
@@ -664,7 +665,8 @@ PyArray_NewFromDescr_int(
     /* Check datatype element size */
     nbytes = descr->elsize;
     if (PyDataType_ISUNSIZED(descr)) {
-        if (!PyDataType_ISFLEXIBLE(descr)) {
+        if (!PyDataType_ISFLEXIBLE(descr) &&
+            NPY_DT_is_legacy(NPY_DTYPE(descr))) {
             PyErr_SetString(PyExc_TypeError, "Empty data-type");
             Py_DECREF(descr);
             return NULL;
@@ -1766,7 +1768,8 @@ PyArray_FromAny(PyObject *op, PyArray_Descr *newtype, int min_depth,
     }
 
     if (cache == NULL && newtype != NULL &&
-            PyDataType_ISSIGNED(newtype) && PyArray_IsScalar(op, Generic)) {
+            PyDataType_ISSIGNED(dtype) &&
+            PyArray_IsScalar(op, Generic)) {
         assert(ndim == 0);
         /*
          * This is an (possible) inconsistency where:
@@ -2831,7 +2834,7 @@ PyArray_CopyAsFlat(PyArrayObject *dst, PyArrayObject *src, NPY_ORDER order)
     }
 
     if (res == 0 && !(flags & NPY_METH_NO_FLOATINGPOINT_ERRORS)) {
-        int fpes = npy_get_floatstatus_barrier((char *)src_iter);
+        int fpes = npy_get_floatstatus_barrier((char *)&src_iter);
         if (fpes && PyUFunc_GiveFloatingpointErrors("cast", fpes) < 0) {
             return -1;
         }
@@ -3242,7 +3245,7 @@ _calc_length(PyObject *start, PyObject *stop, PyObject *step, PyObject **next, i
 NPY_NO_EXPORT PyObject *
 PyArray_ArangeObj(PyObject *start, PyObject *stop, PyObject *step, PyArray_Descr *dtype)
 {
-    PyArrayObject *range;
+    PyArrayObject *range = NULL;
     PyArray_ArrFuncs *funcs;
     PyObject *next = NULL;
     PyArray_Descr *native = NULL;
@@ -3402,6 +3405,7 @@ PyArray_ArangeObj(PyObject *start, PyObject *stop, PyObject *step, PyArray_Descr
     Py_XDECREF(stop);
     Py_XDECREF(step);
     Py_XDECREF(next);
+    Py_XDECREF(range);
     return NULL;
 }
 

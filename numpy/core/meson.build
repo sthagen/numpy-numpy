@@ -147,7 +147,11 @@ endforeach
 
 c99_complex_funcs = [
   'cabs', 'cacos', 'cacosh', 'carg', 'casin', 'casinh', 'catan',
-  'catanh', 'cexp', 'clog', 'cpow', 'csqrt'
+  'catanh', 'cexp', 'clog', 'cpow', 'csqrt',
+  # The long double variants (like csinl)  should be mandatory on C11,
+  # but are missing in FreeBSD. Issue gh-22850
+  'csin', 'csinh', 'ccos', 'ccosh', 'ctan', 'ctanh',
+
 ]
 foreach func: c99_complex_funcs
   func_single = func + 'f'
@@ -462,9 +466,6 @@ npymath_sources = [
   npy_math_internal_h,
   'src/npymath/halffloat.c',
   'src/npymath/npy_math.c',
-  # Remove this `arm64_exports.c` file once scipy macos arm64 build correctly
-  # links to the arm64 npymath library, see gh-22673
-  'src/npymath/arm64_exports.c',
 ]
 npymath_lib = static_library('npymath',
   npymath_sources,
@@ -735,6 +736,9 @@ src_multiarray = [
   'src/multiarray/textreading/stream_pyobject.c',
   'src/multiarray/textreading/str_to_int.c',
   'src/multiarray/textreading/tokenize.cpp',
+  # Remove this `arm64_exports.c` file once scipy macos arm64 build correctly
+  # links to the arm64 npymath library, see gh-22673
+  'src/npymath/arm64_exports.c',
 ]
 
 src_umath = [

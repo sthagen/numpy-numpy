@@ -12,7 +12,7 @@ jobs:
       # therefore a new base image chose instead to guarantee to
       # have a newer version >= 1.8.10 to avoid warnings
       # that related to the default behaviors or non-exist config options
-      - image: cimg/base:2021.05
+      - image: cimg/python:3.9
 
     working_directory: ~/repo
 
@@ -47,9 +47,10 @@ jobs:
           name: create virtual environment, install dependencies
           command: |
             sudo apt-get update
-            sudo apt-get install -y python3.8 python3.8-dev python3-venv graphviz texlive-fonts-recommended texlive-latex-recommended \
+            #sudo apt-get install -y python3.9 python3.9-dev python3-venv graphviz texlive-fonts-recommended texlive-latex-recommended \
+            sudo apt-get install -y graphviz texlive-fonts-recommended texlive-latex-recommended \
               texlive-latex-extra latexmk texlive-xetex doxygen
-            python3.8 -m venv venv
+            python3.9 -m venv venv
             . venv/bin/activate
 
       - run:
@@ -110,7 +111,7 @@ jobs:
 
       - add_ssh_keys:
           fingerprints:
-            - "9f:8c:e5:3f:53:40:0b:ee:c9:c3:0f:fd:0f:3c:cc:55"
+            - "45:d8:d1:d6:f7:53:47:c5:d0:9e:35:19:79:e7:ff:24"
 
       -  run:
           name: deploy devdocs
@@ -130,7 +131,7 @@ jobs:
 
       - add_ssh_keys:
           fingerprints:
-            - "11:fb:19:69:80:3a:6d:37:9c:d1:ac:20:17:cd:c8:17"
+            - "df:8b:fb:34:2d:38:7d:49:fc:1b:e8:44:4f:bd:2c:0e"
 
       - run:
           name: select SSH key for neps repo
@@ -138,7 +139,7 @@ jobs:
             cat <<\EOF > ~/.ssh/config
             Host github.com
               IdentitiesOnly yes
-              IdentityFile /home/circleci/.ssh/id_rsa_11fb1969803a6d379cd1ac2017cdc817
+              IdentityFile /home/circleci/.ssh/id_rsa_df8bfb342d387d49fc1be8444fbd2c0e
             EOF
 
       -  run:

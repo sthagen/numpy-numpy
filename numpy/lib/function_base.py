@@ -2695,7 +2695,7 @@ def cov(m, y=None, rowvar=True, bias=False, ddof=None, fweights=None,
 
     if fact <= 0:
         warnings.warn("Degrees of freedom <= 0 for slice",
-                      RuntimeWarning, stacklevel=3)
+                      RuntimeWarning, stacklevel=2)
         fact = 0.0
 
     X -= avg[:, None]
@@ -2844,7 +2844,7 @@ def corrcoef(x, y=None, rowvar=True, bias=np._NoValue, ddof=np._NoValue, *,
     if bias is not np._NoValue or ddof is not np._NoValue:
         # 2015-03-15, 1.10
         warnings.warn('bias and ddof have no effect and are deprecated',
-                      DeprecationWarning, stacklevel=3)
+                      DeprecationWarning, stacklevel=2)
     c = cov(x, y, rowvar, dtype=dtype)
     try:
         d = diag(c)
@@ -3684,7 +3684,7 @@ def msort(a):
     warnings.warn(
         "msort is deprecated, use np.sort(a, axis=0) instead",
         DeprecationWarning,
-        stacklevel=3,
+        stacklevel=2,
     )
     b = array(a, subok=True, copy=True)
     b.sort(0)
@@ -4912,6 +4912,25 @@ def trapz(y, x=None, dx=1.0, axis=-1):
     return ret
 
 
+if overrides.ARRAY_FUNCTION_ENABLED:
+    # If array-function is enabled (normal), we wrap everything into a C
+    # callable, which has no __code__ or other attributes normal Python funcs
+    # have.  SciPy however, tries to "clone" `trapz` into a new Python function
+    # which requires `__code__` and a few other attributes.
+    # So we create a dummy clone and copy over its attributes allowing
+    # SciPy <= 1.10 to work: https://github.com/scipy/scipy/issues/17811
+    assert not hasattr(trapz, "__code__")
+
+    def _fake_trapz(y, x=None, dx=1.0, axis=-1):
+        return trapz(y, x=x, dx=dx, axis=axis)
+
+    trapz.__code__ = _fake_trapz.__code__
+    trapz.__globals__ = _fake_trapz.__globals__
+    trapz.__defaults__ = _fake_trapz.__defaults__
+    trapz.__closure__ = _fake_trapz.__closure__
+    trapz.__kwdefaults__ = _fake_trapz.__kwdefaults__
+
+
 def _meshgrid_dispatcher(*xi, copy=None, sparse=None, indexing=None):
     return xi
 
@@ -5398,7 +5417,7 @@ def insert(arr, obj, values, axis=None):
             warnings.warn(
                 "in the future insert will treat boolean arrays and "
                 "array-likes as a boolean index instead of casting it to "
-                "integer", FutureWarning, stacklevel=3)
+                "integer", FutureWarning, stacklevel=2)
             indices = indices.astype(intp)
             # Code after warning period:
             #if obj.ndim != 1:

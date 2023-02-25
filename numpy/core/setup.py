@@ -171,18 +171,6 @@ def check_math_capabilities(config, ext, moredefs, mathlibs):
         else:
             return 1
 
-    # NOTE: not needed in Meson build, we set the minimum
-    #       compiler version to 8.4 to avoid this bug
-    # GH-14787: Work around GCC<8.4 bug when compiling with AVX512
-    # support on Windows-based platforms
-    def check_gh14787(fn):
-        if fn == 'attribute_target_avx512f':
-            if (sys.platform in ('win32', 'cygwin') and
-                    config.check_compiler_gcc() and
-                    not config.check_gcc_version_at_least(8, 4)):
-                ext.extra_compile_args.extend(
-                        ['-ffixed-xmm%s' % n for n in range(16, 32)])
-
     #use_msvc = config.check_decl("_MSC_VER")
     if not check_funcs_once(MANDATORY_FUNCS, add_to_moredefs=False):
         raise SystemError("One of the required function to build numpy is not"
@@ -233,20 +221,8 @@ def check_math_capabilities(config, ext, moredefs, mathlibs):
     for dec, fn in OPTIONAL_FUNCTION_ATTRIBUTES:
         if config.check_gcc_function_attribute(dec, fn):
             moredefs.append((fname2def(fn), 1))
-            check_gh14787(fn)
 
     platform = sysconfig.get_platform()
-    if ("x86_64" in platform):
-        for dec, fn in OPTIONAL_FUNCTION_ATTRIBUTES_AVX:
-            if config.check_gcc_function_attribute(dec, fn):
-                moredefs.append((fname2def(fn), 1))
-                check_gh14787(fn)
-        for dec, fn, code, header in (
-        OPTIONAL_FUNCTION_ATTRIBUTES_WITH_INTRINSICS_AVX):
-            if config.check_gcc_function_attribute_with_intrinsics(
-                    dec, fn, code, header):
-                moredefs.append((fname2def(fn), 1))
-
     for fn in OPTIONAL_VARIABLE_ATTRIBUTES:
         if config.check_gcc_variable_attribute(fn):
             m = fn.replace("(", "_").replace(")", "_")
@@ -840,6 +816,7 @@ def configuration(parent_package='',top_path=None):
             join('src', 'multiarray', 'descriptor.h'),
             join('src', 'multiarray', 'dtypemeta.h'),
             join('src', 'multiarray', 'dtype_transfer.h'),
+            join('src', 'multiarray', 'dtype_traversal.h'),
             join('src', 'multiarray', 'dragon4.h'),
             join('src', 'multiarray', 'einsum_debug.h'),
             join('src', 'multiarray', 'einsum_sumprod.h'),
@@ -913,6 +890,7 @@ def configuration(parent_package='',top_path=None):
             join('src', 'multiarray', 'dtypemeta.c'),
             join('src', 'multiarray', 'dragon4.c'),
             join('src', 'multiarray', 'dtype_transfer.c'),
+            join('src', 'multiarray', 'dtype_traversal.c'),
             join('src', 'multiarray', 'einsum.c.src'),
             join('src', 'multiarray', 'einsum_sumprod.c.src'),
             join('src', 'multiarray', 'experimental_public_dtype_api.c'),
@@ -1019,6 +997,7 @@ def configuration(parent_package='',top_path=None):
             join('src', 'umath', 'loops_modulo.dispatch.c.src'),
             join('src', 'umath', 'loops_comparison.dispatch.c.src'),
             join('src', 'umath', 'loops_unary_complex.dispatch.c.src'),
+            join('src', 'umath', 'loops_autovec.dispatch.c.src'),
             join('src', 'umath', 'matmul.h.src'),
             join('src', 'umath', 'matmul.c.src'),
             join('src', 'umath', 'clip.h'),

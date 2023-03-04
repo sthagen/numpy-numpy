@@ -22,6 +22,7 @@
 #include "ctors.h"
 #include "lowlevel_strided_loops.h"
 #include "array_assign.h"
+#include "refcount.h"
 
 #include "npy_sort.h"
 #include "npy_partition.h"
@@ -1036,7 +1037,7 @@ _new_sortlike(PyArrayObject *op, int axis, PyArray_SortFunc *sort,
     npy_intp astride = PyArray_STRIDE(op, axis);
     int swap = PyArray_ISBYTESWAPPED(op);
     int needcopy = !IsAligned(op) || swap || astride != elsize;
-    int hasrefs = PyDataType_REFCHK(PyArray_DESCR(op));
+    int needs_api = PyDataType_FLAGCHK(PyArray_DESCR(op), NPY_NEEDS_PYAPI);
 
     PyArray_CopySwapNFunc *copyswapn = PyArray_DESCR(op)->f->copyswapn;
     char *buffer = NULL;
@@ -1070,6 +1071,9 @@ _new_sortlike(PyArrayObject *op, int axis, PyArray_SortFunc *sort,
             ret = -1;
             goto fail;
         }
+        if (PyDataType_FLAGCHK(PyArray_DESCR(op), NPY_NEEDS_INIT)) {
+            memset(buffer, 0, N * elsize);
+        }
     }
 
     NPY_BEGIN_THREADS_DESCR(PyArray_DESCR(op));
@@ -1091,7 +1095,7 @@ _new_sortlike(PyArrayObject *op, int axis, PyArray_SortFunc *sort,
 
         if (part == NULL) {
             ret = sort(bufptr, N, op);
-            if (hasrefs && PyErr_Occurred()) {
+            if (needs_api && PyErr_Occurred()) {
                 ret = -1;
             }
             if (ret < 0) {
@@ -1104,7 +1108,7 @@ _new_sortlike(PyArrayObject *op, int axis, PyArray_SortFunc *sort,
             npy_intp i;
             for (i = 0; i < nkth; ++i) {
                 ret = part(bufptr, N, kth[i], pivots, &npiv, op);
-                if (hasrefs && PyErr_Occurred()) {
+                if (needs_api && PyErr_Occurred()) {
                     ret = -1;
                 }
                 if (ret < 0) {
@@ -1114,16 +1118,7 @@ _new_sortlike(PyArrayObject *op, int axis, PyArray_SortFunc *sort,
         }
 
         if (needcopy) {
-            if (hasrefs) {
-                if (swap) {
-                    copyswapn(buffer, elsize, NULL, 0, N, swap, op);
-                }
-                _unaligned_strided_byte_copy(it->dataptr, astride,
-                                             buffer, elsize, N, elsize);
-            }
-            else {
-                copyswapn(it->dataptr, astride, buffer, elsize, N, swap, op);
-            }
+            copyswapn(it->dataptr, astride, buffer, elsize, N, swap, op);
         }
 
         PyArray_ITER_NEXT(it);
@@ -1132,7 +1127,10 @@ _new_sortlike(PyArrayObject *op, int axis, PyArray_SortFunc *sort,
 fail:
     NPY_END_THREADS_DESCR(PyArray_DESCR(op));
     /* cleanup internal buffer */
-    PyDataMem_UserFREE(buffer, N * elsize, mem_handler);
+    if (needcopy) {
+        PyArray_ClearBuffer(PyArray_DESCR(op), buffer, elsize, N, 1);
+        PyDataMem_UserFREE(buffer, N * elsize, mem_handler);
+    }
     if (ret < 0 && !PyErr_Occurred()) {
         /* Out of memory during sorting or buffer creation */
         PyErr_NoMemory();
@@ -1153,7 +1151,7 @@ _new_argsortlike(PyArrayObject *op, int axis, PyArray_ArgSortFunc *argsort,
     npy_intp astride = PyArray_STRIDE(op, axis);
     int swap = PyArray_ISBYTESWAPPED(op);
     int needcopy = !IsAligned(op) || swap || astride != elsize;
-    int hasrefs = PyDataType_REFCHK(PyArray_DESCR(op));
+    int needs_api = PyDataType_FLAGCHK(PyArray_DESCR(op), NPY_NEEDS_PYAPI);
     int needidxbuffer;
 
     PyArray_CopySwapNFunc *copyswapn = PyArray_DESCR(op)->f->copyswapn;
@@ -1206,6 +1204,9 @@ _new_argsortlike(PyArrayObject *op, int axis, PyArray_ArgSortFunc *argsort,
             ret = -1;
             goto fail;
         }
+        if (PyDataType_FLAGCHK(PyArray_DESCR(op), NPY_NEEDS_INIT)) {
+            memset(valbuffer, 0, N * elsize);
+        }
     }
 
     if (needidxbuffer) {
@@ -1241,7 +1242,7 @@ _new_argsortlike(PyArrayObject *op, int axis, PyArray_ArgSortFunc *argsort,
         if (argpart == NULL) {
             ret = argsort(valptr, idxptr, N, op);
             /* Object comparisons may raise an exception in Python 3 */
-            if (hasrefs && PyErr_Occurred()) {
+            if (needs_api && PyErr_Occurred()) {
                 ret = -1;
             }
             if (ret < 0) {
@@ -1255,7 +1256,7 @@ _new_argsortlike(PyArrayObject *op, int axis, PyArray_ArgSortFunc *argsort,
             for (i = 0; i < nkth; ++i) {
                 ret = argpart(valptr, idxptr, N, kth[i], pivots, &npiv, op);
                 /* Object comparisons may raise an exception in Python 3 */
-                if (hasrefs && PyErr_Occurred()) {
+                if (needs_api && PyErr_Occurred()) {
                     ret = -1;
                 }
                 if (ret < 0) {
@@ -1281,7 +1282,10 @@ _new_argsortlike(PyArrayObject *op, int axis, PyArray_ArgSortFunc *argsort,
 fail:
     NPY_END_THREADS_DESCR(PyArray_DESCR(op));
     /* cleanup internal buffers */
-    PyDataMem_UserFREE(valbuffer, N * elsize, mem_handler);
+    if (needcopy) {
+        PyArray_ClearBuffer(PyArray_DESCR(op), valbuffer, elsize, N, 1);
+        PyDataMem_UserFREE(valbuffer, N * elsize, mem_handler);
+    }
     PyDataMem_UserFREE(idxbuffer, N * sizeof(npy_intp), mem_handler);
     if (ret < 0) {
         if (!PyErr_Occurred()) {

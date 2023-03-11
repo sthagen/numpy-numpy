@@ -461,7 +461,6 @@ from numpy.lib.function_base import (
     digitize as digitize,
     cov as cov,
     corrcoef as corrcoef,
-    msort as msort,
     median as median,
     sinc as sinc,
     hamming as hamming,
@@ -3139,10 +3138,6 @@ infty: Final[float]
 nan: Final[float]
 pi: Final[float]
 
-CLIP: L[0]
-WRAP: L[1]
-RAISE: L[2]
-
 ERR_IGNORE: L[0]
 ERR_WARN: L[1]
 ERR_RAISE: L[2]
@@ -3211,7 +3206,7 @@ class ufunc:
     # can't type them very precisely.
     reduce: Any
     accumulate: Any
-    reduce: Any
+    reduceat: Any
     outer: Any
     # Similarly at won't be defined for ufuncs that return multiple
     # outputs, so we can't type it very precisely.

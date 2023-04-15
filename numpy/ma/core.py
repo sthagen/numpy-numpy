@@ -7008,6 +7008,21 @@ def sort(a, axis=-1, kind=None, order=None, endwith=True, fill_value=None):
     See Also
     --------
     MaskedArray.sort : equivalent method
+
+    Examples
+    --------
+    >>> import numpy.ma as ma
+    >>> x = [11.2, -3.973, 0.801, -1.41]
+    >>> mask = [0, 0, 0, 1]
+    >>> masked_x = ma.masked_array(x, mask)
+    >>> masked_x
+    masked_array(data=[11.2, -3.973, 0.801, --],
+                 mask=[False, False, False,  True],
+           fill_value=1e+20)
+    >>> ma.sort(masked_x)
+    masked_array(data=[-3.973, 0.801, 11.2, --],
+                 mask=[False, False, False,  True],
+           fill_value=1e+20)
     """
     a = np.array(a, copy=True, subok=True)
     if axis is None:
@@ -7201,6 +7216,21 @@ def right_shift(a, n):
     See Also
     --------
     numpy.right_shift
+
+    Examples
+    --------
+    >>> import numpy.ma as ma
+    >>> x = [11, 3, 8, 1]
+    >>> mask = [0, 0, 0, 1]
+    >>> masked_x = ma.masked_array(x, mask)
+    >>> masked_x
+    masked_array(data=[11, 3, 8, --],
+                 mask=[False, False, False,  True],
+           fill_value=999999)
+    >>> ma.right_shift(masked_x,1)
+    masked_array(data=[5, 1, 4, --],
+                 mask=[False, False, False,  True],
+           fill_value=999999)
 
     """
     m = getmask(a)

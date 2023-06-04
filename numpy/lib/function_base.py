@@ -495,11 +495,11 @@ def average(a, axis=None, weights=None, returned=False, *,
         ...
     TypeError: Axis must be specified when shapes of a and weights differ.
 
-    >>> a = np.ones(5, dtype=np.float128)
+    >>> a = np.ones(5, dtype=np.float64)
     >>> w = np.ones(5, dtype=np.complex64)
     >>> avg = np.average(a, weights=w)
     >>> print(avg.dtype)
-    complex256
+    complex128
 
     With ``keepdims=True``, the following result has shape (3, 1).
 
@@ -1311,10 +1311,7 @@ def gradient(f, *varargs, axis=None, edge_order=1):
 
     if len_axes == 1:
         return outvals[0]
-    elif np._using_numpy2_behavior():
-        return tuple(outvals)
-    else:
-        return outvals
+    return tuple(outvals)
 
 
 def _diff_dispatcher(a, n=None, axis=None, prepend=None, append=None):

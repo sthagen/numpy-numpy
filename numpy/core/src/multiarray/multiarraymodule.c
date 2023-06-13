@@ -311,35 +311,6 @@ PyArray_AsCArray(PyObject **op, void *ptr, npy_intp *dims, int nd,
     return 0;
 }
 
-/* Deprecated --- Use PyArray_AsCArray instead */
-
-/*NUMPY_API
- * Convert to a 1D C-array
- */
-NPY_NO_EXPORT int
-PyArray_As1D(PyObject **NPY_UNUSED(op), char **NPY_UNUSED(ptr),
-             int *NPY_UNUSED(d1), int NPY_UNUSED(typecode))
-{
-    /* 2008-07-14, 1.5 */
-    PyErr_SetString(PyExc_NotImplementedError,
-                "PyArray_As1D: use PyArray_AsCArray.");
-    return -1;
-}
-
-/*NUMPY_API
- * Convert to a 2D C-array
- */
-NPY_NO_EXPORT int
-PyArray_As2D(PyObject **NPY_UNUSED(op), char ***NPY_UNUSED(ptr),
-             int *NPY_UNUSED(d1), int *NPY_UNUSED(d2), int NPY_UNUSED(typecode))
-{
-    /* 2008-07-14, 1.5 */
-    PyErr_SetString(PyExc_NotImplementedError,
-                "PyArray_As2D: use PyArray_AsCArray.");
-    return -1;
-}
-
-/* End Deprecated */
 
 /*NUMPY_API
  * Free pointers created if As2D is called
@@ -3199,7 +3170,13 @@ array_arange(PyObject *NPY_UNUSED(ignored),
 NPY_NO_EXPORT unsigned int
 PyArray_GetNDArrayCVersion(void)
 {
-    return (unsigned int)NPY_ABI_VERSION;
+    // return (unsigned int)NPY_ABI_VERSION;
+    /*
+     * TODO: Preliminary returning the 1.x API version, that is a lie but
+     *       allows (for the moment) downstream modules to mix and match
+     *       and us to import old matplotlib versions in our doc builds...
+     */
+    return (unsigned int)0x01000009;
 }
 
 /*NUMPY_API
@@ -4265,55 +4242,6 @@ _vec_string(PyObject *NPY_UNUSED(dummy), PyObject *args, PyObject *NPY_UNUSED(kw
 
     return 0;
 }
-
-#ifndef NPY_NO_SIGNAL
-
-static NPY_TLS int sigint_buf_init = 0;
-static NPY_TLS NPY_SIGJMP_BUF _NPY_SIGINT_BUF;
-
-/*NUMPY_API
- */
-NPY_NO_EXPORT void
-_PyArray_SigintHandler(int signum)
-{
-    PyOS_setsig(signum, SIG_IGN);
-    /*
-     * jump buffer may be uninitialized as SIGINT allowing functions are usually
-     * run in other threads than the master thread that receives the signal
-     */
-    if (sigint_buf_init > 0) {
-        NPY_SIGLONGJMP(_NPY_SIGINT_BUF, signum);
-    }
-    /*
-     * sending SIGINT to the worker threads to cancel them is job of the
-     * application
-     */
-}
-
-/*NUMPY_API
- */
-NPY_NO_EXPORT void*
-_PyArray_GetSigintBuf(void)
-{
-    sigint_buf_init = 1;
-    return (void *)&_NPY_SIGINT_BUF;
-}
-
-#else
-
-NPY_NO_EXPORT void
-_PyArray_SigintHandler(int signum)
-{
-    return;
-}
-
-NPY_NO_EXPORT void*
-_PyArray_GetSigintBuf(void)
-{
-    return NULL;
-}
-
-#endif
 
 
 static PyObject *

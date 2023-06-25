@@ -1822,56 +1822,6 @@ add_newdoc('numpy.core.multiarray', 'set_string_function',
 
     """)
 
-add_newdoc('numpy.core.multiarray', 'set_numeric_ops',
-    """
-    set_numeric_ops(op1=func1, op2=func2, ...)
-
-    Set numerical operators for array objects.
-
-    .. deprecated:: 1.16
-
-        For the general case, use :c:func:`PyUFunc_ReplaceLoopBySignature`.
-        For ndarray subclasses, define the ``__array_ufunc__`` method and
-        override the relevant ufunc.
-
-    Parameters
-    ----------
-    op1, op2, ... : callable
-        Each ``op = func`` pair describes an operator to be replaced.
-        For example, ``add = lambda x, y: np.add(x, y) % 5`` would replace
-        addition by modulus 5 addition.
-
-    Returns
-    -------
-    saved_ops : list of callables
-        A list of all operators, stored before making replacements.
-
-    Notes
-    -----
-    .. warning::
-       Use with care!  Incorrect usage may lead to memory errors.
-
-    A function replacing an operator cannot make use of that operator.
-    For example, when replacing add, you may not use ``+``.  Instead,
-    directly call ufuncs.
-
-    Examples
-    --------
-    >>> def add_mod5(x, y):
-    ...     return np.add(x, y) % 5
-    ...
-    >>> old_funcs = np.set_numeric_ops(add=add_mod5)
-
-    >>> x = np.arange(12).reshape((3, 4))
-    >>> x + x
-    array([[0, 2, 4, 1],
-           [3, 0, 2, 4],
-           [1, 3, 0, 2]])
-
-    >>> ignore = np.set_numeric_ops(**old_funcs) # restore operators
-
-    """)
-
 add_newdoc('numpy.core.multiarray', 'promote_types',
     """
     promote_types(type1, type2)
@@ -2927,6 +2877,45 @@ add_newdoc('numpy.core.multiarray', 'ndarray', ('T',
     """))
 
 
+add_newdoc('numpy.core.multiarray', 'ndarray', ('mT',
+    """
+    View of the matrix transposed array.
+    
+    The matrix transpose is the transpose of the last two dimensions, even
+    if the array is of higher dimension.
+
+    .. versionadded:: 2.0
+
+    Raises
+    ------
+    ValueError
+        If the array is of dimension less than 2.
+        
+    Examples
+    --------
+    >>> a = np.array([[1, 2], [3, 4]])
+    >>> a
+    array([[1, 2],
+           [3, 4]])
+    >>> a.mT
+    array([[1, 3],
+           [2, 4]])
+           
+    >>> a = np.arange(8).reshape((2, 2, 2))
+    >>> a
+    array([[[0, 1],
+            [2, 3]],
+    
+           [[4, 5],
+            [6, 7]]])
+    >>> a.mT
+    array([[[0, 2],
+            [1, 3]],
+    
+           [[4, 6],
+            [5, 7]]])
+    
+    """))
 ##############################################################################
 #
 # ndarray methods

@@ -22,6 +22,18 @@ if is_mingw
   add_project_arguments('-D__USE_MINGW_ANSI_STDIO=1', language: ['c', 'cpp'])
 endif
 
+# We install libnpymath and libnpyrandom; ensure they're using a `.lib` rather
+# than a `.a` file extension in order not to break including them in a
+# distutils-based build (see gh-23981 and
+# https://mesonbuild.com/FAQ.html#why-does-building-my-project-with-msvc-output-static-libraries-called-libfooa)
+if is_windows and cc.get_id() == 'msvc'
+  name_prefix_staticlib = ''
+  name_suffix_staticlib = 'lib'
+else
+  name_prefix_staticlib = []
+  name_suffix_staticlib = []
+endif
+
 # Enable UNIX large file support on 32-bit systems (64 bit off_t,
 # lseek -> lseek64, etc.)
 cflags_large_file_support = []
@@ -138,7 +150,6 @@ pure_subdirs = [
   '_utils',
   'array_api',
   'compat',
-  'distutils',
   'doc',
   'f2py',
   'lib',
@@ -149,6 +160,9 @@ pure_subdirs = [
   'tests',
   'typing',
 ]
+if py.version().version_compare('<3.12')
+  pure_subdirs += 'distutils'
+endif
 
 np_dir = py.get_install_dir() / 'numpy'
 
@@ -198,10 +212,13 @@ foreach name, dep : dependency_map
   if dep.found()
     conf_data.set(name + '_VERSION', dep.version())
     conf_data.set(name + '_TYPE_NAME', dep.type_name())
-    conf_data.set(name + '_INCLUDEDIR', dep.get_variable('includedir'))
-    conf_data.set(name + '_LIBDIR', dep.get_variable('libdir'))
-    conf_data.set(name + '_OPENBLAS_CONFIG', dep.get_variable('openblas_config'))
-    conf_data.set(name + '_PCFILEDIR', dep.get_variable('pcfiledir'))
+    if dep.type_name() == 'pkgconfig'
+      # CMake detection yields less info, so we need to leave it blank there
+      conf_data.set(name + '_INCLUDEDIR', dep.get_variable('includedir'))
+      conf_data.set(name + '_LIBDIR', dep.get_variable('libdir'))
+      conf_data.set(name + '_OPENBLAS_CONFIG', dep.get_variable('openblas_config'))
+      conf_data.set(name + '_PCFILEDIR', dep.get_variable('pcfiledir'))
+    endif
   endif
 endforeach
 

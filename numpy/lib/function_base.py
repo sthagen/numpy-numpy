@@ -1,10 +1,10 @@
+import builtins
 import collections.abc
 import functools
 import re
 import sys
 import warnings
 
-from .._utils import set_module
 import numpy as np
 import numpy.core.numeric as _nx
 from numpy.core import transpose
@@ -27,9 +27,7 @@ from numpy.core.multiarray import (
     _place, add_docstring, bincount, normalize_axis_index, _monotonicity,
     interp as compiled_interp, interp_complex as compiled_interp_complex
     )
-from numpy.core.umath import _add_newdoc_ufunc as add_newdoc_ufunc
-
-import builtins
+from numpy._utils import set_module
 
 # needed in this module for compatibility
 from numpy.lib.histograms import histogram, histogramdd  # noqa: F401
@@ -45,8 +43,8 @@ __all__ = [
     'rot90', 'extract', 'place', 'vectorize', 'asarray_chkfinite', 'average',
     'bincount', 'digitize', 'cov', 'corrcoef',
     'msort', 'median', 'sinc', 'hamming', 'hanning', 'bartlett',
-    'blackman', 'kaiser', 'trapz', 'i0', 'add_newdoc', 'add_docstring',
-    'meshgrid', 'delete', 'insert', 'append', 'interp', 'add_newdoc_ufunc',
+    'blackman', 'kaiser', 'trapz', 'i0',
+    'meshgrid', 'delete', 'insert', 'append', 'interp',
     'quantile'
     ]
 
@@ -1955,6 +1953,9 @@ def disp(mesg, device=None, linefeed=True):
     """
     Display a message on a device.
 
+    .. deprecated:: 2.0
+        Use your own printing function instead.
+
     Parameters
     ----------
     mesg : str
@@ -1983,6 +1984,16 @@ def disp(mesg, device=None, linefeed=True):
     '"Display" in a file\\n'
 
     """
+
+    # Deprecated in NumPy 2.0, 2023-07-11
+    warnings.warn(
+        "`disp` is deprecated, "
+        "use your own printing function instead. "
+        "(deprecated in NumPy 2.0)",
+        DeprecationWarning,
+        stacklevel=2
+    )    
+
     if device is None:
         device = sys.stdout
     if linefeed:

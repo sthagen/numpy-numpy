@@ -34,20 +34,8 @@ def test_numpy_namespace():
     # None of these objects are publicly documented to be part of the main
     # NumPy namespace (some are useful though, others need to be cleaned up)
     undocumented = {
-        'byte_bounds': 'numpy.lib.utils.byte_bounds',
         'compare_chararrays': 'numpy.core._multiarray_umath.compare_chararrays',
-        'deprecate': 'numpy.lib.utils.deprecate',
-        'deprecate_with_doc': 'numpy.lib.utils.deprecate_with_doc',
-        'disp': 'numpy.lib.function_base.disp',
-        'get_array_wrap': 'numpy.lib.shape_base.get_array_wrap',
-        'get_include': 'numpy.lib.utils.get_include',
-        'recfromcsv': 'numpy.lib.npyio.recfromcsv',
-        'recfromtxt': 'numpy.lib.npyio.recfromtxt',
-        'safe_eval': 'numpy.lib.utils.safe_eval',
-        'set_string_function': 'numpy.core.arrayprint.set_string_function',
         'show_config': 'numpy.__config__.show',
-        'show_runtime': 'numpy.lib.utils.show_runtime',
-        'who': 'numpy.lib.utils.who',
     }
     # We override dir to not show these members
     allowlist = undocumented
@@ -132,6 +120,7 @@ PUBLIC_MODULES = ['numpy.' + s for s in [
     "lib.recfunctions",
     "lib.scimath",
     "lib.stride_tricks",
+    "lib.npyio",
     "linalg",
     "ma",
     "ma.extras",
@@ -204,21 +193,8 @@ PRIVATE_BUT_PRESENT_MODULES = ['numpy.' + s for s in [
     "f2py.symbolic",
     "f2py.use_rules",
     "fft.helper",
-    "lib.arraypad",
-    "lib.arraysetops",
     "lib.arrayterator",
-    "lib.function_base",
-    "lib.histograms",
-    "lib.index_tricks",
-    "lib.nanfunctions",
-    "lib.npyio",
-    "lib.polynomial",
-    "lib.shape_base",
-    "lib.twodim_base",
-    "lib.type_check",
-    "lib.ufunclike",
     "lib.user_array",  # note: not in np.lib, but probably should just be deleted
-    "lib.utils",
     "linalg.lapack_lite",
     "linalg.linalg",
     "ma.core",

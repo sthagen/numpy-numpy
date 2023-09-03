@@ -122,32 +122,30 @@ cdata.set('NPY_SIZEOF_PY_LONG_LONG',
   cc.sizeof('PY_LONG_LONG', dependencies: py_dep, prefix: '#include <Python.h>'))
 
 # Check for complex support
-if cc.has_header('complex.h')
-  cdata.set10('HAVE_COMPLEX_H', true)
-  cdata.set10('NPY_USE_C99_COMPLEX', true)
-  if cc.get_argument_syntax() == 'msvc'
-    complex_types_to_check = [
-      ['NPY_HAVE_COMPLEX_FLOAT', 'NPY_SIZEOF_COMPLEX_FLOAT', '_Fcomplex', 'float'],
-      ['NPY_HAVE_COMPLEX_DOUBLE', 'NPY_SIZEOF_COMPLEX_DOUBLE', '_Dcomplex', 'double'],
-      ['NPY_HAVE_COMPLEX_LONG_DOUBLE', 'NPY_SIZEOF_COMPLEX_LONGDOUBLE', '_Lcomplex', 'long double'],
-    ]
-  else
-    complex_types_to_check = [
-      ['NPY_HAVE_COMPLEX_FLOAT', 'NPY_SIZEOF_COMPLEX_FLOAT', 'complex float', 'float'],
-      ['NPY_HAVE_COMPLEX_DOUBLE', 'NPY_SIZEOF_COMPLEX_DOUBLE', 'complex double', 'double'],
-      ['NPY_HAVE_COMPLEX_LONG_DOUBLE', 'NPY_SIZEOF_COMPLEX_LONGDOUBLE', 'complex long double', 'long double'],
-    ]
-  endif
-  foreach symbol_type: complex_types_to_check
-    if cc.has_type(symbol_type[2], prefix: '#include <complex.h>')
-      cdata.set10(symbol_type[0], true)
-      # Determine size of NumPy's own, struct-based, complex types. Binary
-      # compatibility with C99 complex types is checked at build time in `npy_common.h`.
-      ftype = symbol_type[3]
-      cdata.set(symbol_type[1], cc.sizeof(f'struct {@ftype@ __x; @ftype@ __y;}'))
-    endif
-  endforeach
+if not cc.has_header('complex.h')
+  error('"complex.h" header not found')
 endif
+
+if cc.get_argument_syntax() == 'msvc'
+  complex_types_to_check = [
+    ['NPY_SIZEOF_COMPLEX_FLOAT', '_Fcomplex'],
+    ['NPY_SIZEOF_COMPLEX_DOUBLE', '_Dcomplex'],
+    ['NPY_SIZEOF_COMPLEX_LONGDOUBLE', '_Lcomplex'],
+  ]
+else
+  complex_types_to_check = [
+    ['NPY_SIZEOF_COMPLEX_FLOAT', 'complex float'],
+    ['NPY_SIZEOF_COMPLEX_DOUBLE', 'complex double'],
+    ['NPY_SIZEOF_COMPLEX_LONGDOUBLE', 'complex long double'],
+  ]
+endif
+foreach symbol_type: complex_types_to_check
+  if not cc.has_type(symbol_type[1], prefix: '#include <complex.h>')
+    t = symbol_type[1]
+    error(f'"complex.h" header does not include complex type @t@')
+  endif
+  cdata.set(symbol_type[0], cc.sizeof(symbol_type[1], prefix: '#include <complex.h>'))
+endforeach
 
 # Mandatory functions: if not found, fail the build
 # Some of these can still be blocklisted if the C99 implementation
@@ -175,7 +173,6 @@ c99_complex_funcs = [
   # The long double variants (like csinl)  should be mandatory on C11,
   # but are missing in FreeBSD. Issue gh-22850
   'csin', 'csinh', 'ccos', 'ccosh', 'ctan', 'ctanh',
-
 ]
 foreach func: c99_complex_funcs
   func_single = func + 'f'
@@ -380,7 +377,9 @@ endforeach
 # https://github.com/numpy/numpy/blob/eead09a3d02c09374942cdc787c0b5e4fe9e7472/numpy/core/setup_common.py#L264-L434
 # This port is in service of solving gh-23972
 # as well as https://github.com/mesonbuild/meson/issues/11068
-longdouble_format = meson.get_compiler('c').run(
+longdouble_format = meson.get_external_property('longdouble_format', 'UNKNOWN')
+if longdouble_format == 'UNKNOWN'
+  longdouble_format = meson.get_compiler('c').run(
 '''
 #include <stdio.h>
 #include <string.h>
@@ -459,7 +458,8 @@ int main(void) {
   }
   }
 }
-''').stdout()
+  ''').stdout()
+endif
 if longdouble_format == 'UNKNOWN' or longdouble_format == 'UNDEFINED'
   error('Unknown long double format of size: ' + cc.sizeof('long double').to_string())
 endif
@@ -488,7 +488,7 @@ if cc.has_header_symbol('inttypes.h', 'PRIdPTR')
 endif
 
 visibility_hidden = ''
-if cc.has_function_attribute('visibility:hidden')
+if cc.has_function_attribute('visibility:hidden') and host_machine.system() != 'cygwin'
   visibility_hidden = '__attribute__((visibility("hidden")))'
 endif
 cdata.set('NPY_VISIBILITY_HIDDEN', visibility_hidden)

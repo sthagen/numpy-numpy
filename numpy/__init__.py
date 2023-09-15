@@ -137,7 +137,7 @@ else:
         datetime_data, deg2rad, degrees, diagonal, divide, divmod, dot, 
         double, dtype, e, einsum, einsum_path, empty, empty_like, equal,
         errstate, euler_gamma, exp, exp2, expm1, fabs, 
-        flatiter, flatnonzero, flexible, 
+        flatiter, flatnonzero, flexible, sctypeDict,
         float_power, floating, floor, floor_divide, fmax, fmin, fmod, 
         format_float_positional, format_float_scientific, format_parser, 
         frexp, from_dlpack, frombuffer, fromfile, fromfunction, fromiter, 
@@ -218,7 +218,7 @@ else:
     from .lib._ufunclike_impl import fix, isneginf, isposinf
     from .lib._arraypad_impl import pad
     from .lib._utils_impl import (
-        byte_bounds, show_runtime, get_include, info
+        show_runtime, get_include, info
     )
     from .lib._stride_tricks_impl import (
         broadcast_arrays, broadcast_shapes, broadcast_to

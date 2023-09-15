@@ -3,7 +3,7 @@ name: Linux tests
 # This file is meant for testing across supported Python versions, build types
 # and interpreters (PyPy, python-dbg, a pre-release Python in summer time),
 # build-via-sdist, run benchmarks, measure code coverage, and other build
-# options like relaxed-strides.
+# options.
 
 on:
   push:
@@ -78,6 +78,7 @@ jobs:
         python-version: 'pypy3.9-v7.3.12'
     - name: Install system dependencies
       run: |
+        sudo apt-get update
         sudo apt-get install libopenblas-dev ninja-build
     - uses: ./.github/meson_actions
 
@@ -92,6 +93,7 @@ jobs:
         fetch-depth: 0
     - name: Install debug Python
       run: |
+        sudo apt-get update
         sudo apt-get install python3-dbg ninja-build
     - name: Build NumPy and install into venv
       run: |
@@ -128,6 +130,7 @@ jobs:
     - name: Install gfortran and OpenBLAS (MacPython build)
       run: |
         set -xe
+        sudo apt update
         sudo apt install gfortran libgfortran5
         target=$(python tools/openblas_support.py)
         sudo cp -r $target/lib/* /usr/lib
@@ -156,6 +159,7 @@ jobs:
         python-version: '3.9'
     - name: Install build and benchmarking dependencies
       run: |
+        sudo apt-get update
         sudo apt-get install libopenblas-dev ninja-build
         pip install spin cython asv virtualenv packaging
     - name: Install NumPy
@@ -172,24 +176,6 @@ jobs:
       run: |
         spin bench --quick
 
-  relaxed_strides_debug:
-    needs: [smoke_test]
-    runs-on: ubuntu-latest
-    if: github.event_name != 'push'
-    env:
-      CHECK_BLAS: 1
-      NPY_USE_BLAS_ILP64: 1
-      NPY_RELAXED_STRIDES_DEBUG: 1
-    steps:
-    - uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
-      with:
-        submodules: recursive
-        fetch-depth: 0
-    - uses: actions/setup-python@61a6322f88396a6271a6ee3565807d608ecaddd1 # v4.7.0
-      with:
-        python-version: '3.11'
-    - uses: ./.github/actions
-
   sdist:
     needs: [smoke_test]
     runs-on: ubuntu-latest
@@ -205,6 +191,7 @@ jobs:
     - name: Install gfortran and OpenBLAS (MacPython build)
       run: |
         set -xe
+        sudo apt update
         sudo apt install gfortran libgfortran5
         target=$(python tools/openblas_support.py)
         sudo cp -r $target/lib/* /usr/lib

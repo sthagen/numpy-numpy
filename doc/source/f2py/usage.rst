@@ -120,9 +120,9 @@ module is constructed by scanning all Fortran source codes for routine
 signatures, before proceeding to build the extension module.
 
 .. warning::
-   From Python 3.12 onwards, ``distutils`` has been removed. Use
-   environment variables to interact with ``meson`` instead. See its
-   `FAQ <https://mesonbuild.com/howtox.html>`__ for more information.
+   From Python 3.12 onwards, ``distutils`` has been removed. Use environment
+   variables or native files to interact with ``meson`` instead. See its `FAQ
+   <https://mesonbuild.com/howtox.html>`__ for more information.
 
 Among other options (see below) and options described for previous modes, the following can be used.
 
@@ -275,6 +275,11 @@ Python module ``numpy.f2py``
 
 The f2py program is written in Python and can be run from inside your code
 to compile Fortran code at runtime, as follows:
+
+.. legacy::
+
+   The ``f2py.compile()`` function will be removed from 2.0.x onwards.
+   Write a custom ``subprocess.run`` wrapper over ``numpy.f2py`` instead.
 
 .. code-block:: python
 

@@ -63,26 +63,27 @@ enum NPY_TYPES {    NPY_BOOL=0,
 
                     NPY_CHAR, /* Deprecated, will raise if used */
 
-                    /*
-                     * New types added after NumPy 2.0
-                     */
-                    NPY_VSTRING,
-
-                    /* NPY_NTYPES is version-dependent and defined in
-                       npy_2_compat.h */
+                    /* The number of *legacy* dtypes */
+                    NPY_NTYPES_LEGACY=24,
 
                     /* assign a high value to avoid changing this in the
                        future when new dtypes are added */
-                    NPY_NOTYPE=64,
+                    NPY_NOTYPE=25,
 
                     NPY_USERDEF=256,  /* leave room for characters */
 
                     /* The number of types not including the new 1.6 types */
                     NPY_NTYPES_ABI_COMPATIBLE=21,
+
+                    /*
+                     * New DTypes which do not share the legacy layout
+                     * (added after NumPy 2.0).  VSTRING is the first of these
+                     * we may open up a block for user-defined dtypes in the
+                     * future.
+                     */
+                    NPY_VSTRING=2056,
 };
 
-/* The number of legacy old-style dtypes */
-#define NPY_NTYPES_LEGACY 24
 
 /* basetype array priority */
 #define NPY_PRIORITY 0.0
@@ -637,7 +638,35 @@ typedef struct _PyArray_Descr {
          * This was added for NumPy 2.0.0.
          */
         npy_hash_t hash;
+
 } PyArray_Descr;
+
+
+
+/*
+ * Umodified PyArray_Descr struct identical to NumPy 1.x.  This struct is
+ * used as a prototype for registering a new legacy DType.
+ * It is also used to access the fields in user code running on 1.x.
+ */
+typedef struct {
+        PyObject_HEAD
+        PyTypeObject *typeobj;
+        char kind;
+        char type;
+        char byteorder;
+        char flags;
+        int type_num;
+        int elsize;
+        int alignment;
+        struct _arr_descr *subarray;
+        PyObject *fields;
+        PyObject *names;
+        PyArray_ArrFuncs *f;
+        PyObject *metadata;
+        NpyAuxData *c_metadata;
+        npy_hash_t hash;
+} PyArray_DescrProto;
+
 
 typedef struct _arr_descr {
         PyArray_Descr *base;

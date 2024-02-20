@@ -1165,6 +1165,10 @@ User-defined data types
     *totype*. Any old casting function is over-written. A ``0`` is
     returned on success or a ``-1`` on failure.
 
+    .. c:type:: PyArray_VectorUnaryFunc
+
+        The function pointer type for low-level casting functions.
+
 .. c:function:: int PyArray_RegisterCanCast( \
         PyArray_Descr* descr, int totype, NPY_SCALARKIND scalar)
 
@@ -4154,7 +4158,7 @@ Enumerated Types
 
     .. c:enumerator:: NPY_STABLESORT
 
-        Used as an alias of :c:data:`NPY_MERGESORT` and vica versa.
+        Used as an alias of :c:data:`NPY_MERGESORT` and vice versa.
 
     .. c:enumerator:: NPY_NSORTS
 

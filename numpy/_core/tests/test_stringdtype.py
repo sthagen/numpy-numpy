@@ -546,6 +546,10 @@ def test_sized_integer_casts(bitsize, signed):
     with pytest.raises(OverflowError):
         np.array(oob, dtype="T").astype(idtype)
 
+    with pytest.raises(ValueError):
+        np.array(["1", np.nan, "3"],
+                 dtype=StringDType(na_object=np.nan)).astype(idtype)
+
 
 @pytest.mark.parametrize("typename", ["byte", "short", "int", "longlong"])
 @pytest.mark.parametrize("signed", ["", "u"])
@@ -908,6 +912,12 @@ def test_nat_casts():
             assert_array_equal(
                 arr.astype(dtype),
                 np.array([output_object]*arr.size, dtype=dtype))
+
+
+def test_nat_conversion():
+    for nat in [np.datetime64("NaT", "s"), np.timedelta64("NaT", "s")]:
+        with pytest.raises(ValueError, match="string coercion is disabled"):
+            np.array(["a", nat], dtype=StringDType(coerce=False))
 
 
 def test_growing_strings(dtype):

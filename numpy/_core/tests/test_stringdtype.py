@@ -668,6 +668,12 @@ def test_ufuncs_minmax(string_list, ufunc_name, func, use_out):
         res = ufunc(arr, arr)
 
     assert_array_equal(uarr, res)
+    assert_array_equal(getattr(arr, ufunc_name)(), func(string_list))
+
+
+def test_max_regression():
+    arr = np.array(['y', 'y', 'z'], dtype="T")
+    assert arr.max() == 'z'
 
 
 @pytest.mark.parametrize("use_out", [True, False])
@@ -716,6 +722,18 @@ def test_ufunc_add(dtype, string_list, other_strings, use_out):
     else:
         with pytest.raises(ValueError):
             np.add(arr1, arr2)
+
+
+def test_ufunc_add_reduce(dtype):
+    values = ["a", "this is a long string", "c"]
+    arr = np.array(values, dtype=dtype)
+    out = np.empty((), dtype=dtype)
+
+    expected = np.array("".join(values), dtype=dtype)
+    assert_array_equal(np.add.reduce(arr), expected)
+
+    np.add.reduce(arr, out=out)
+    assert_array_equal(out, expected)
 
 
 def test_add_promoter(string_list):

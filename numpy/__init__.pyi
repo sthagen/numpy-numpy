@@ -625,7 +625,8 @@ class _SupportsWrite(Protocol[_AnyStr_contra]):
     def write(self, s: _AnyStr_contra, /) -> object: ...
 
 __all__: list[str]
-__dir__: list[str]
+def __dir__() -> Sequence[str]: ...
+
 __version__: str
 __array_api_version__: str
 test: PytestTester
@@ -638,6 +639,7 @@ test: PytestTester
 def show_config() -> None: ...
 
 _NdArraySubClass = TypeVar("_NdArraySubClass", bound=NDArray[Any])
+_NdArraySubClass_co = TypeVar("_NdArraySubClass_co", bound=NDArray[Any], covariant=True)
 _DTypeScalar_co = TypeVar("_DTypeScalar_co", covariant=True, bound=generic)
 _ByteOrder: TypeAlias = L["S", "<", ">", "=", "|", "L", "B", "N", "I", "little", "big", "native"]
 
@@ -901,17 +903,18 @@ _ArrayLikeInt: TypeAlias = (
 )
 
 _FlatIterSelf = TypeVar("_FlatIterSelf", bound=flatiter[Any])
+_FlatShapeType = TypeVar("_FlatShapeType", bound=tuple[int])
 
 @final
-class flatiter(Generic[_NdArraySubClass]):
+class flatiter(Generic[_NdArraySubClass_co]):
     __hash__: ClassVar[None]
     @property
-    def base(self) -> _NdArraySubClass: ...
+    def base(self) -> _NdArraySubClass_co: ...
     @property
     def coords(self) -> _Shape: ...
     @property
     def index(self) -> int: ...
-    def copy(self) -> _NdArraySubClass: ...
+    def copy(self) -> _NdArraySubClass_co: ...
     def __iter__(self: _FlatIterSelf) -> _FlatIterSelf: ...
     def __next__(self: flatiter[NDArray[_ScalarType]]) -> _ScalarType: ...
     def __len__(self) -> int: ...
@@ -924,7 +927,7 @@ class flatiter(Generic[_NdArraySubClass]):
     def __getitem__(
         self,
         key: _ArrayLikeInt | slice | ellipsis | tuple[_ArrayLikeInt | slice | ellipsis],
-    ) -> _NdArraySubClass: ...
+    ) -> _NdArraySubClass_co: ...
     # TODO: `__setitem__` operates via `unsafe` casting rules, and can
     # thus accept any type accepted by the relevant underlying `np.generic`
     # constructor.
@@ -934,6 +937,10 @@ class flatiter(Generic[_NdArraySubClass]):
         key: _ArrayLikeInt | slice | ellipsis | tuple[_ArrayLikeInt | slice | ellipsis],
         value: Any,
     ) -> None: ...
+    @overload
+    def __array__(self: flatiter[ndarray[_FlatShapeType, _DType]], dtype: None = ..., /) -> ndarray[_FlatShapeType, _DType]: ...
+    @overload
+    def __array__(self: flatiter[ndarray[_FlatShapeType, Any]], dtype: _DType, /) -> ndarray[_FlatShapeType, _DType]: ...
     @overload
     def __array__(self: flatiter[ndarray[Any, _DType]], dtype: None = ..., /) -> ndarray[Any, _DType]: ...
     @overload
@@ -1469,11 +1476,11 @@ class ndarray(_ArrayOrScalarCommon, Generic[_ShapeType, _DType_co]):
     @overload
     def __array__(
         self, dtype: None = ..., /, *, copy: None | bool = ...
-    ) -> ndarray[Any, _DType_co]: ...
+    ) -> ndarray[_ShapeType, _DType_co]: ...
     @overload
     def __array__(
         self, dtype: _DType, /, *, copy: None | bool = ...
-    ) -> ndarray[Any, _DType]: ...
+    ) -> ndarray[_ShapeType, _DType]: ...
 
     def __array_ufunc__(
         self,
@@ -1704,11 +1711,13 @@ class ndarray(_ArrayOrScalarCommon, Generic[_ShapeType, _DType_co]):
         axis: None | SupportsIndex = ...,
     ) -> ndarray[Any, _DType_co]: ...
 
+    # TODO: use `tuple[int]` as shape type once covariant (#26081)
     def flatten(
         self,
         order: _OrderKACF = ...,
     ) -> ndarray[Any, _DType_co]: ...
 
+    # TODO: use `tuple[int]` as shape type once covariant (#26081)
     def ravel(
         self,
         order: _OrderKACF = ...,
@@ -2613,6 +2622,7 @@ _NBit2 = TypeVar("_NBit2", bound=NBitBase)
 class generic(_ArrayOrScalarCommon):
     @abstractmethod
     def __init__(self, *args: Any, **kwargs: Any) -> None: ...
+    # TODO: use `tuple[()]` as shape type once covariant (#26081)
     @overload
     def __array__(self: _ScalarType, dtype: None = ..., /) -> NDArray[_ScalarType]: ...
     @overload
@@ -3740,6 +3750,7 @@ class poly1d:
 
     __hash__: ClassVar[None]  # type: ignore
 
+    # TODO: use `tuple[int]` as shape type once covariant (#26081)
     @overload
     def __array__(self, t: None = ..., copy: None | bool = ...) -> NDArray[Any]: ...
     @overload

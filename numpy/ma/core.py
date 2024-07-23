@@ -7337,6 +7337,33 @@ def left_shift(a, n):
     --------
     numpy.left_shift
 
+    Examples
+    --------
+    Shift with a masked array:
+
+    >>> arr = np.ma.array([10, 20, 30], mask=[False, True, False])
+    >>> np.ma.left_shift(arr, 1)
+    masked_array(data=[20, --, 60],
+                 mask=[False,  True, False],
+           fill_value=999999)
+
+    Large shift:
+
+    >>> np.ma.left_shift(10, 10)
+    masked_array(data=10240,
+                 mask=False,
+           fill_value=999999)
+
+    Shift with a scalar and an array:
+
+    >>> scalar = 10
+    >>> arr = np.ma.array([1, 2, 3], mask=[False, True, False])
+    >>> np.ma.left_shift(scalar, arr)
+    masked_array(data=[20, --, 80],
+                 mask=[False,  True, False],
+           fill_value=999999)
+
+
     """
     m = getmask(a)
     if m is nomask:
@@ -7393,6 +7420,28 @@ def put(a, indices, values, mode='raise'):
     See Also
     --------
     MaskedArray.put
+
+    Examples
+    --------
+    Putting values in a masked array:
+
+    >>> a = np.ma.array([1, 2, 3, 4], mask=[False, True, False, False])
+    >>> np.ma.put(a, [1, 3], [10, 30])
+    >>> a
+    masked_array(data=[ 1, 10,  3, 30],
+                 mask=False,
+           fill_value=999999)
+
+    Using put with a 2D array:
+
+    >>> b = np.ma.array([[1, 2], [3, 4]], mask=[[False, True], [False, False]])
+    >>> np.ma.put(b, [[0, 1], [1, 0]], [[10, 20], [30, 40]])
+    >>> b
+    masked_array(
+      data=[[40, 30],
+            [ 3,  4]],
+      mask=False,
+      fill_value=999999)
 
     """
     # We can't use 'frommethod', the order of arguments is different
@@ -7505,6 +7554,37 @@ def reshape(a, new_shape, order='C'):
     See Also
     --------
     MaskedArray.reshape : equivalent function
+
+    Examples
+    --------
+    Reshaping a 1-D array:
+
+    >>> a = np.ma.array([1, 2, 3, 4])
+    >>> np.ma.reshape(a, (2, 2))
+    masked_array(
+      data=[[1, 2],
+            [3, 4]],
+      mask=False,
+      fill_value=999999)
+
+    Reshaping a 2-D array:
+
+    >>> b = np.ma.array([[1, 2], [3, 4]])
+    >>> np.ma.reshape(b, (1, 4))
+    masked_array(data=[[1, 2, 3, 4]],
+                 mask=False,
+           fill_value=999999)
+
+    Reshaping a 1-D array with a mask:
+
+    >>> c = np.ma.array([1, 2, 3, 4], mask=[False, True, False, False])
+    >>> np.ma.reshape(c, (2, 2))
+    masked_array(
+      data=[[1, --],
+            [3, 4]],
+      mask=[[False,  True],
+            [False, False]],
+      fill_value=999999)
 
     """
     # We can't use 'frommethod', it whine about some parameters. Dmmit.

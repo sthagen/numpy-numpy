@@ -9,7 +9,7 @@ import warnings
 import weakref
 import contextlib
 import operator
-from operator import itemgetter, index as opindex, methodcaller
+from operator import itemgetter
 from collections.abc import Mapping
 import pickle
 
@@ -469,7 +469,7 @@ def load(file, mmap_mode=None, allow_pickle=False, fix_imports=True,
         # If the file size is less than N, we need to make sure not
         # to seek past the beginning of the file
         fid.seek(-min(N, len(magic)), 1)  # back-up
-        if magic.startswith(_ZIP_PREFIX) or magic.startswith(_ZIP_SUFFIX):
+        if magic.startswith((_ZIP_PREFIX, _ZIP_SUFFIX)):
             # zip-file (assume .npz)
             # Potentially transfer file ownership to NpzFile
             stack.pop_all()

@@ -106,7 +106,7 @@ from ._dtype import _kind_name
 
 # we don't export these for import *, but we do want them accessible
 # as numerictypes.bool, etc.
-from builtins import bool, int, float, complex, object, str, bytes
+from builtins import bool, int, float, complex, object, str, bytes  # noqa: UP029
 
 
 # We use this later
@@ -452,7 +452,7 @@ def isdtype(dtype, kind):
         elif isinstance(kind, str):
             raise ValueError(
                 "kind argument is a string, but"
-                f" {repr(kind)} is not a known kind name."
+                f" {kind!r} is not a known kind name."
             )
         else:
             try:

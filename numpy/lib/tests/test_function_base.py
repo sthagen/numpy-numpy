@@ -1563,7 +1563,7 @@ class TestVectorize:
         try:
             vectorize(random.randrange)  # Should succeed
         except Exception:
-            raise AssertionError()
+            raise AssertionError
 
     def test_keywords2_ticket_2100(self):
         # Test kwarg support: enhancement ticket 2100
@@ -1935,7 +1935,7 @@ class TestVectorize:
 
     def test_datetime_conversion(self):
         otype = "datetime64[ns]"
-        arr = np.array(['2024-01-01', '2024-01-02', '2024-01-03'], 
+        arr = np.array(['2024-01-01', '2024-01-02', '2024-01-03'],
                        dtype='datetime64[ns]')
         assert_array_equal(np.vectorize(lambda x: x, signature="(i)->(j)",
                                         otypes=[otype])(arr), arr)

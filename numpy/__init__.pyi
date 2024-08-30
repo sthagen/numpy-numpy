@@ -9,6 +9,9 @@ import enum
 from abc import abstractmethod
 from types import EllipsisType, TracebackType, MappingProxyType, GenericAlias
 from contextlib import contextmanager
+from decimal import Decimal
+from fractions import Fraction
+from uuid import UUID
 
 import numpy as np
 from numpy._pytesttester import PytestTester
@@ -32,8 +35,6 @@ from numpy._typing import (
     _ArrayLikeTD64_co,
     _ArrayLikeDT64_co,
     _ArrayLikeObject_co,
-    _ArrayLikeStr_co,
-    _ArrayLikeBytes_co,
     _ArrayLikeUnknown,
     _UnknownType,
 
@@ -72,7 +73,6 @@ from numpy._typing import (
     _NBitShort,
     _NBitIntC,
     _NBitIntP,
-    _NBitInt,
     _NBitLong,
     _NBitLongLong,
     _NBitHalf,
@@ -120,6 +120,18 @@ from numpy._typing import (
     _BytesCodes,
     _VoidCodes,
     _ObjectCodes,
+    _StringCodes,
+
+    _UnsignedIntegerCodes,
+    _SignedIntegerCodes,
+    _IntegerCodes,
+    _FloatingCodes,
+    _ComplexFloatingCodes,
+    _InexactCodes,
+    _NumberCodes,
+    _CharacterCodes,
+    _FlexibleCodes,
+    _GenericCodes,
 
     # Ufuncs
     _UFunc_Nin1_Nout1,
@@ -160,21 +172,21 @@ from numpy._typing._callable import (
 # NOTE: Numpy's mypy plugin is used for removing the types unavailable
 # to the specific platform
 from numpy._typing._extended_precision import (
-    uint128 as uint128,
-    uint256 as uint256,
-    int128 as int128,
-    int256 as int256,
-    float80 as float80,
-    float96 as float96,
-    float128 as float128,
-    float256 as float256,
-    complex160 as complex160,
-    complex192 as complex192,
-    complex256 as complex256,
-    complex512 as complex512,
+    uint128,
+    uint256,
+    int128,
+    int256,
+    float80,
+    float96,
+    float128,
+    float256,
+    complex160,
+    complex192,
+    complex256,
+    complex512,
 )
 
-from numpy._array_api_info import __array_namespace_info__ as __array_namespace_info__
+from numpy._array_api_info import __array_namespace_info__
 
 from collections.abc import (
     Callable,
@@ -209,210 +221,208 @@ from typing import (
 # https://github.com/python/typeshed/blob/main/stdlib/typing_extensions.pyi
 from typing_extensions import LiteralString
 
-# Ensures that the stubs are picked up
 from numpy import (
-    ctypeslib as ctypeslib,
-    exceptions as exceptions,
-    fft as fft,
-    lib as lib,
-    linalg as linalg,
-    ma as ma,
-    polynomial as polynomial,
-    random as random,
-    testing as testing,
-    version as version,
-    exceptions as exceptions,
-    dtypes as dtypes,
-    rec as rec,
-    char as char,
-    strings as strings,
+    core,
+    ctypeslib,
+    exceptions,
+    f2py,
+    fft,
+    lib,
+    linalg,
+    ma,
+    polynomial,
+    random,
+    testing,
+    typing,
+    version,
+    exceptions,
+    dtypes,
+    rec,
+    char,
+    strings,
 )
 
 from numpy._core.records import (
-    record as record,
-    recarray as recarray,
-)
-
-from numpy._core.defchararray import (
-    chararray as chararray,
+    record,
+    recarray,
 )
 
 from numpy._core.function_base import (
-    linspace as linspace,
-    logspace as logspace,
-    geomspace as geomspace,
+    linspace,
+    logspace,
+    geomspace,
 )
 
 from numpy._core.fromnumeric import (
-    take as take,
-    reshape as reshape,
-    choose as choose,
-    repeat as repeat,
-    put as put,
-    swapaxes as swapaxes,
-    transpose as transpose,
-    matrix_transpose as matrix_transpose,
-    partition as partition,
-    argpartition as argpartition,
-    sort as sort,
-    argsort as argsort,
-    argmax as argmax,
-    argmin as argmin,
-    searchsorted as searchsorted,
-    resize as resize,
-    squeeze as squeeze,
-    diagonal as diagonal,
-    trace as trace,
-    ravel as ravel,
-    nonzero as nonzero,
-    shape as shape,
-    compress as compress,
-    clip as clip,
-    sum as sum,
-    all as all,
-    any as any,
-    cumsum as cumsum,
-    cumulative_sum as cumulative_sum,
-    ptp as ptp,
-    max as max,
-    min as min,
-    amax as amax,
-    amin as amin,
-    prod as prod,
-    cumprod as cumprod,
-    cumulative_prod as cumulative_prod,
-    ndim as ndim,
-    size as size,
-    around as around,
-    round as round,
-    mean as mean,
-    std as std,
-    var as var,
+    take,
+    reshape,
+    choose,
+    repeat,
+    put,
+    swapaxes,
+    transpose,
+    matrix_transpose,
+    partition,
+    argpartition,
+    sort,
+    argsort,
+    argmax,
+    argmin,
+    searchsorted,
+    resize,
+    squeeze,
+    diagonal,
+    trace,
+    ravel,
+    nonzero,
+    shape,
+    compress,
+    clip,
+    sum,
+    all,
+    any,
+    cumsum,
+    cumulative_sum,
+    ptp,
+    max,
+    min,
+    amax,
+    amin,
+    prod,
+    cumprod,
+    cumulative_prod,
+    ndim,
+    size,
+    around,
+    round,
+    mean,
+    std,
+    var,
 )
 
 from numpy._core._asarray import (
-    require as require,
+    require,
 )
 
 from numpy._core._type_aliases import (
-    sctypeDict as sctypeDict,
+    sctypeDict,
 )
 
 from numpy._core._ufunc_config import (
-    seterr as seterr,
-    geterr as geterr,
-    setbufsize as setbufsize,
-    getbufsize as getbufsize,
-    seterrcall as seterrcall,
-    geterrcall as geterrcall,
+    seterr,
+    geterr,
+    setbufsize,
+    getbufsize,
+    seterrcall,
+    geterrcall,
     _ErrKind,
     _ErrFunc,
 )
 
 from numpy._core.arrayprint import (
-    set_printoptions as set_printoptions,
-    get_printoptions as get_printoptions,
-    array2string as array2string,
-    format_float_scientific as format_float_scientific,
-    format_float_positional as format_float_positional,
-    array_repr as array_repr,
-    array_str as array_str,
-    printoptions as printoptions,
+    set_printoptions,
+    get_printoptions,
+    array2string,
+    format_float_scientific,
+    format_float_positional,
+    array_repr,
+    array_str,
+    printoptions,
 )
 
 from numpy._core.einsumfunc import (
-    einsum as einsum,
-    einsum_path as einsum_path,
+    einsum,
+    einsum_path,
 )
 
 from numpy._core.multiarray import (
-    array as array,
-    empty_like as empty_like,
-    empty as empty,
-    zeros as zeros,
-    concatenate as concatenate,
-    inner as inner,
-    where as where,
-    lexsort as lexsort,
-    can_cast as can_cast,
-    min_scalar_type as min_scalar_type,
-    result_type as result_type,
-    dot as dot,
-    vdot as vdot,
-    bincount as bincount,
-    copyto as copyto,
-    putmask as putmask,
-    packbits as packbits,
-    unpackbits as unpackbits,
-    shares_memory as shares_memory,
-    may_share_memory as may_share_memory,
-    asarray as asarray,
-    asanyarray as asanyarray,
-    ascontiguousarray as ascontiguousarray,
-    asfortranarray as asfortranarray,
-    arange as arange,
-    busday_count as busday_count,
-    busday_offset as busday_offset,
-    datetime_as_string as datetime_as_string,
-    datetime_data as datetime_data,
-    frombuffer as frombuffer,
-    fromfile as fromfile,
-    fromiter as fromiter,
-    is_busday as is_busday,
-    promote_types as promote_types,
-    fromstring as fromstring,
-    frompyfunc as frompyfunc,
-    nested_iters as nested_iters,
+    array,
+    empty_like,
+    empty,
+    zeros,
+    concatenate,
+    inner,
+    where,
+    lexsort,
+    can_cast,
+    min_scalar_type,
+    result_type,
+    dot,
+    vdot,
+    bincount,
+    copyto,
+    putmask,
+    packbits,
+    unpackbits,
+    shares_memory,
+    may_share_memory,
+    asarray,
+    asanyarray,
+    ascontiguousarray,
+    asfortranarray,
+    arange,
+    busday_count,
+    busday_offset,
+    datetime_as_string,
+    datetime_data,
+    frombuffer,
+    fromfile,
+    fromiter,
+    is_busday,
+    promote_types,
+    fromstring,
+    frompyfunc,
+    nested_iters,
     flagsobj,
 )
 
 from numpy._core.numeric import (
-    zeros_like as zeros_like,
-    ones as ones,
-    ones_like as ones_like,
-    full as full,
-    full_like as full_like,
-    count_nonzero as count_nonzero,
-    isfortran as isfortran,
-    argwhere as argwhere,
-    flatnonzero as flatnonzero,
-    correlate as correlate,
-    convolve as convolve,
-    outer as outer,
-    tensordot as tensordot,
-    roll as roll,
-    rollaxis as rollaxis,
-    moveaxis as moveaxis,
-    cross as cross,
-    indices as indices,
-    fromfunction as fromfunction,
-    isscalar as isscalar,
-    binary_repr as binary_repr,
-    base_repr as base_repr,
-    identity as identity,
-    allclose as allclose,
-    isclose as isclose,
-    array_equal as array_equal,
-    array_equiv as array_equiv,
-    astype as astype,
+    zeros_like,
+    ones,
+    ones_like,
+    full,
+    full_like,
+    count_nonzero,
+    isfortran,
+    argwhere,
+    flatnonzero,
+    correlate,
+    convolve,
+    outer,
+    tensordot,
+    roll,
+    rollaxis,
+    moveaxis,
+    cross,
+    indices,
+    fromfunction,
+    isscalar,
+    binary_repr,
+    base_repr,
+    identity,
+    allclose,
+    isclose,
+    array_equal,
+    array_equiv,
+    astype,
 )
 
 from numpy._core.numerictypes import (
-    isdtype as isdtype,
-    issubdtype as issubdtype,
-    ScalarType as ScalarType,
-    typecodes as typecodes,
+    isdtype,
+    issubdtype,
+    ScalarType,
+    typecodes,
 )
 
 from numpy._core.shape_base import (
-    atleast_1d as atleast_1d,
-    atleast_2d as atleast_2d,
-    atleast_3d as atleast_3d,
-    block as block,
-    hstack as hstack,
-    stack as stack,
-    vstack as vstack,
-    unstack as unstack,
+    atleast_1d,
+    atleast_2d,
+    atleast_3d,
+    block,
+    hstack,
+    stack,
+    vstack,
+    unstack,
 )
 
 from numpy.lib import (
@@ -420,197 +430,320 @@ from numpy.lib import (
 )
 
 from numpy.lib._arraypad_impl import (
-    pad as pad,
+    pad,
 )
 
 from numpy.lib._arraysetops_impl import (
-    ediff1d as ediff1d,
-    intersect1d as intersect1d,
-    isin as isin,
-    setdiff1d as setdiff1d,
-    setxor1d as setxor1d,
-    union1d as union1d,
-    unique as unique,
-    unique_all as unique_all,
-    unique_counts as unique_counts,
-    unique_inverse as unique_inverse,
-    unique_values as unique_values,
+    ediff1d,
+    intersect1d,
+    isin,
+    setdiff1d,
+    setxor1d,
+    union1d,
+    unique,
+    unique_all,
+    unique_counts,
+    unique_inverse,
+    unique_values,
 )
 
 from numpy.lib._function_base_impl import (
-    select as select,
-    piecewise as piecewise,
-    trim_zeros as trim_zeros,
-    copy as copy,
-    iterable as iterable,
-    percentile as percentile,
-    diff as diff,
-    gradient as gradient,
-    angle as angle,
-    unwrap as unwrap,
-    sort_complex as sort_complex,
-    flip as flip,
-    rot90 as rot90,
-    extract as extract,
-    place as place,
-    asarray_chkfinite as asarray_chkfinite,
-    average as average,
-    bincount as bincount,
-    digitize as digitize,
-    cov as cov,
-    corrcoef as corrcoef,
-    median as median,
-    sinc as sinc,
-    hamming as hamming,
-    hanning as hanning,
-    bartlett as bartlett,
-    blackman as blackman,
-    kaiser as kaiser,
-    i0 as i0,
-    meshgrid as meshgrid,
-    delete as delete,
-    insert as insert,
-    append as append,
-    interp as interp,
-    quantile as quantile,
-    trapezoid as trapezoid,
+    select,
+    piecewise,
+    trim_zeros,
+    copy,
+    iterable,
+    percentile,
+    diff,
+    gradient,
+    angle,
+    unwrap,
+    sort_complex,
+    flip,
+    rot90,
+    extract,
+    place,
+    asarray_chkfinite,
+    average,
+    bincount,
+    digitize,
+    cov,
+    corrcoef,
+    median,
+    sinc,
+    hamming,
+    hanning,
+    bartlett,
+    blackman,
+    kaiser,
+    i0,
+    meshgrid,
+    delete,
+    insert,
+    append,
+    interp,
+    quantile,
+    trapezoid,
 )
 
 from numpy.lib._histograms_impl import (
-    histogram_bin_edges as histogram_bin_edges,
-    histogram as histogram,
-    histogramdd as histogramdd,
+    histogram_bin_edges,
+    histogram,
+    histogramdd,
 )
 
 from numpy.lib._index_tricks_impl import (
-    ravel_multi_index as ravel_multi_index,
-    unravel_index as unravel_index,
-    mgrid as mgrid,
-    ogrid as ogrid,
-    r_ as r_,
-    c_ as c_,
-    s_ as s_,
-    index_exp as index_exp,
-    ix_ as ix_,
-    fill_diagonal as fill_diagonal,
-    diag_indices as diag_indices,
-    diag_indices_from as diag_indices_from,
+    ravel_multi_index,
+    unravel_index,
+    mgrid,
+    ogrid,
+    r_,
+    c_,
+    s_,
+    index_exp,
+    ix_,
+    fill_diagonal,
+    diag_indices,
+    diag_indices_from,
 )
 
 from numpy.lib._nanfunctions_impl import (
-    nansum as nansum,
-    nanmax as nanmax,
-    nanmin as nanmin,
-    nanargmax as nanargmax,
-    nanargmin as nanargmin,
-    nanmean as nanmean,
-    nanmedian as nanmedian,
-    nanpercentile as nanpercentile,
-    nanvar as nanvar,
-    nanstd as nanstd,
-    nanprod as nanprod,
-    nancumsum as nancumsum,
-    nancumprod as nancumprod,
-    nanquantile as nanquantile,
+    nansum,
+    nanmax,
+    nanmin,
+    nanargmax,
+    nanargmin,
+    nanmean,
+    nanmedian,
+    nanpercentile,
+    nanvar,
+    nanstd,
+    nanprod,
+    nancumsum,
+    nancumprod,
+    nanquantile,
 )
 
 from numpy.lib._npyio_impl import (
-    savetxt as savetxt,
-    loadtxt as loadtxt,
-    genfromtxt as genfromtxt,
-    load as load,
-    save as save,
-    savez as savez,
-    savez_compressed as savez_compressed,
-    packbits as packbits,
-    unpackbits as unpackbits,
-    fromregex as fromregex,
+    savetxt,
+    loadtxt,
+    genfromtxt,
+    load,
+    save,
+    savez,
+    savez_compressed,
+    packbits,
+    unpackbits,
+    fromregex,
 )
 
 from numpy.lib._polynomial_impl import (
-    poly as poly,
-    roots as roots,
-    polyint as polyint,
-    polyder as polyder,
-    polyadd as polyadd,
-    polysub as polysub,
-    polymul as polymul,
-    polydiv as polydiv,
-    polyval as polyval,
-    polyfit as polyfit,
+    poly,
+    roots,
+    polyint,
+    polyder,
+    polyadd,
+    polysub,
+    polymul,
+    polydiv,
+    polyval,
+    polyfit,
 )
 
 from numpy.lib._shape_base_impl import (
-    column_stack as column_stack,
-    dstack as dstack,
-    array_split as array_split,
-    split as split,
-    hsplit as hsplit,
-    vsplit as vsplit,
-    dsplit as dsplit,
-    apply_over_axes as apply_over_axes,
-    expand_dims as expand_dims,
-    apply_along_axis as apply_along_axis,
-    kron as kron,
-    tile as tile,
-    take_along_axis as take_along_axis,
-    put_along_axis as put_along_axis,
+    column_stack,
+    dstack,
+    array_split,
+    split,
+    hsplit,
+    vsplit,
+    dsplit,
+    apply_over_axes,
+    expand_dims,
+    apply_along_axis,
+    kron,
+    tile,
+    take_along_axis,
+    put_along_axis,
 )
 
 from numpy.lib._stride_tricks_impl import (
-    broadcast_to as broadcast_to,
-    broadcast_arrays as broadcast_arrays,
-    broadcast_shapes as broadcast_shapes,
+    broadcast_to,
+    broadcast_arrays,
+    broadcast_shapes,
 )
 
 from numpy.lib._twodim_base_impl import (
-    diag as diag,
-    diagflat as diagflat,
-    eye as eye,
-    fliplr as fliplr,
-    flipud as flipud,
-    tri as tri,
-    triu as triu,
-    tril as tril,
-    vander as vander,
-    histogram2d as histogram2d,
-    mask_indices as mask_indices,
-    tril_indices as tril_indices,
-    tril_indices_from as tril_indices_from,
-    triu_indices as triu_indices,
-    triu_indices_from as triu_indices_from,
+    diag,
+    diagflat,
+    eye,
+    fliplr,
+    flipud,
+    tri,
+    triu,
+    tril,
+    vander,
+    histogram2d,
+    mask_indices,
+    tril_indices,
+    tril_indices_from,
+    triu_indices,
+    triu_indices_from,
 )
 
 from numpy.lib._type_check_impl import (
-    mintypecode as mintypecode,
-    real as real,
-    imag as imag,
-    iscomplex as iscomplex,
-    isreal as isreal,
-    iscomplexobj as iscomplexobj,
-    isrealobj as isrealobj,
-    nan_to_num as nan_to_num,
-    real_if_close as real_if_close,
-    typename as typename,
-    common_type as common_type,
+    mintypecode,
+    real,
+    imag,
+    iscomplex,
+    isreal,
+    iscomplexobj,
+    isrealobj,
+    nan_to_num,
+    real_if_close,
+    typename,
+    common_type,
 )
 
 from numpy.lib._ufunclike_impl import (
-    fix as fix,
-    isposinf as isposinf,
-    isneginf as isneginf,
+    fix,
+    isposinf,
+    isneginf,
 )
 
 from numpy.lib._utils_impl import (
-    get_include as get_include,
-    info as info,
-    show_runtime as show_runtime,
+    get_include,
+    info,
+    show_runtime,
 )
 
 from numpy.matrixlib import (
-    asmatrix as asmatrix,
-    bmat as bmat,
+    asmatrix,
+    bmat,
 )
+
+__all__ = [
+    "emath", "show_config", "version", "__version__", "__array_namespace_info__",
+
+    # __numpy_submodules__
+    "linalg", "fft", "dtypes", "random", "polynomial", "ma", "exceptions", "lib",
+    "ctypeslib", "testing", "test", "rec", "char", "strings",
+    "core", "typing", "f2py",
+
+    # _core.__all__
+    "abs", "acos", "acosh", "asin", "asinh", "atan", "atanh", "atan2", "bitwise_invert",
+    "bitwise_left_shift", "bitwise_right_shift", "concat", "pow", "permute_dims",
+    "memmap", "sctypeDict", "record", "recarray",
+
+    # _core.numeric.__all__
+    "newaxis", "ndarray", "flatiter", "nditer", "nested_iters", "ufunc", "arange",
+    "array", "asarray", "asanyarray", "ascontiguousarray", "asfortranarray", "zeros",
+    "count_nonzero", "empty", "broadcast", "dtype", "fromstring", "fromfile",
+    "frombuffer", "from_dlpack", "where", "argwhere", "copyto", "concatenate",
+    "lexsort", "astype", "can_cast", "promote_types", "min_scalar_type", "result_type",
+    "isfortran", "empty_like", "zeros_like", "ones_like", "correlate", "convolve",
+    "inner", "dot", "outer", "vdot", "roll", "rollaxis", "moveaxis", "cross",
+    "tensordot", "little_endian", "fromiter", "array_equal", "array_equiv", "indices",
+    "fromfunction", "isclose", "isscalar", "binary_repr", "base_repr", "ones",
+    "identity", "allclose", "putmask", "flatnonzero", "inf", "nan", "False_", "True_",
+    "bitwise_not", "full", "full_like", "matmul", "vecdot", "shares_memory",
+    "may_share_memory", "_get_promotion_state", "_set_promotion_state",
+    "all", "amax", "amin", "any", "argmax", "argmin", "argpartition", "argsort",
+    "around", "choose", "clip", "compress", "cumprod", "cumsum", "cumulative_prod",
+    "cumulative_sum", "diagonal", "mean", "max", "min", "matrix_transpose", "ndim",
+    "nonzero", "partition", "prod", "ptp", "put", "ravel", "repeat", "reshape",
+    "resize", "round", "searchsorted", "shape", "size", "sort", "squeeze", "std", "sum",
+    "swapaxes", "take", "trace", "transpose", "var",
+    "absolute", "add", "arccos", "arccosh", "arcsin", "arcsinh", "arctan", "arctan2",
+    "arctanh", "bitwise_and", "bitwise_or", "bitwise_xor", "cbrt", "ceil", "conj",
+    "conjugate", "copysign", "cos", "cosh", "bitwise_count", "deg2rad", "degrees",
+    "divide", "divmod", "e", "equal", "euler_gamma", "exp", "exp2", "expm1", "fabs",
+    "floor", "floor_divide", "float_power", "fmax", "fmin", "fmod", "frexp",
+    "frompyfunc", "gcd", "greater", "greater_equal", "heaviside", "hypot", "invert",
+    "isfinite", "isinf", "isnan", "isnat", "lcm", "ldexp", "left_shift", "less",
+    "less_equal", "log", "log10", "log1p", "log2", "logaddexp", "logaddexp2",
+    "logical_and", "logical_not", "logical_or", "logical_xor", "maximum", "minimum",
+    "mod", "modf", "multiply", "negative", "nextafter", "not_equal", "pi", "positive",
+    "power", "rad2deg", "radians", "reciprocal", "remainder", "right_shift", "rint",
+    "sign", "signbit", "sin", "sinh", "spacing", "sqrt", "square", "subtract", "tan",
+    "tanh", "true_divide", "trunc", "ScalarType", "typecodes", "issubdtype",
+    "datetime_data", "datetime_as_string", "busday_offset", "busday_count", "is_busday",
+    "busdaycalendar", "isdtype",
+    "complexfloating", "character", "unsignedinteger", "inexact", "generic", "floating",
+    "integer", "signedinteger", "number", "flexible", "bool", "float16", "float32",
+    "float64", "longdouble", "complex64", "complex128", "clongdouble",
+    "bytes_", "str_", "void", "object_", "datetime64", "timedelta64", "int8", "byte",
+    "uint8", "ubyte", "int16", "short", "uint16", "ushort", "int32", "intc", "uint32",
+    "uintc", "int64", "long", "uint64", "ulong", "longlong", "ulonglong", "intp",
+    "uintp", "double", "cdouble", "single", "csingle", "half", "bool_", "int_", "uint",
+    "uint128", "uint256", "int128", "int256", "float80", "float96", "float128",
+    "float256", "complex160", "complex192", "complex256", "complex512",
+    "array2string", "array_str", "array_repr", "set_printoptions", "get_printoptions",
+    "printoptions", "format_float_positional", "format_float_scientific", "require",
+    "seterr", "geterr", "setbufsize", "getbufsize", "seterrcall", "geterrcall",
+    "errstate", "_no_nep50_warning",
+    # _core.function_base.__all__
+    "logspace", "linspace", "geomspace",
+    # _core.getlimits.__all__
+    "finfo", "iinfo",
+    # _core.shape_base.__all__
+    "atleast_1d", "atleast_2d", "atleast_3d", "block", "hstack", "stack", "unstack",
+    "vstack",
+    # _core.einsumfunc.__all__
+    "einsum", "einsum_path",
+
+    # lib._histograms_impl.__all__
+    "histogram", "histogramdd", "histogram_bin_edges",
+    # lib._nanfunctions_impl.__all__
+    "nansum", "nanmax", "nanmin", "nanargmax", "nanargmin", "nanmean", "nanmedian",
+    "nanpercentile", "nanvar", "nanstd", "nanprod", "nancumsum", "nancumprod",
+    "nanquantile",
+    # lib._function_base_impl.__all__
+    # NOTE: `trapz` is omitted because it is deprecated
+    "select", "piecewise", "trim_zeros", "copy", "iterable", "percentile", "diff",
+    "gradient", "angle", "unwrap", "sort_complex", "flip", "rot90", "extract", "place",
+    "vectorize", "asarray_chkfinite", "average", "bincount", "digitize", "cov",
+    "corrcoef", "median", "sinc", "hamming", "hanning", "bartlett", "blackman",
+    "kaiser", "i0", "meshgrid", "delete", "insert", "append", "interp", "quantile",
+    "trapezoid",
+    # lib._twodim_base_impl.__all__
+    "diag", "diagflat", "eye", "fliplr", "flipud", "tri", "triu", "tril", "vander",
+    "histogram2d", "mask_indices", "tril_indices", "tril_indices_from", "triu_indices",
+    "triu_indices_from",
+    # lib._shape_base_impl.__all__
+    # NOTE: `row_stack` is omitted because it is deprecated
+    "column_stack", "dstack", "array_split", "split", "hsplit", "vsplit", "dsplit",
+    "apply_over_axes", "expand_dims", "apply_along_axis", "kron", "tile",
+    "take_along_axis", "put_along_axis",
+    # lib._type_check_impl.__all__
+    "iscomplexobj", "isrealobj", "imag", "iscomplex", "isreal", "nan_to_num", "real",
+    "real_if_close", "typename", "mintypecode", "common_type",
+    # lib._arraysetops_impl.__all__
+    # NOTE: `in1d` is omitted because it is deprecated
+    "ediff1d", "intersect1d", "isin", "setdiff1d", "setxor1d", "union1d", "unique",
+    "unique_all", "unique_counts", "unique_inverse", "unique_values",
+    # lib._ufunclike_impl.__all__
+    "fix", "isneginf", "isposinf",
+    # lib._arraypad_impl.__all__
+    "pad",
+    # lib._utils_impl.__all__
+    "get_include", "info", "show_runtime",
+    # lib._stride_tricks_impl.__all__
+    "broadcast_to", "broadcast_arrays", "broadcast_shapes",
+    # lib._polynomial_impl.__all__
+    "poly", "roots", "polyint", "polyder", "polyadd", "polysub", "polymul", "polydiv",
+    "polyval", "poly1d", "polyfit",
+    # lib._npyio_impl.__all__
+    "savetxt", "loadtxt", "genfromtxt", "load", "save", "savez", "savez_compressed",
+    "packbits", "unpackbits", "fromregex",
+    # lib._index_tricks_impl.__all__
+    "ravel_multi_index", "unravel_index", "mgrid", "ogrid", "r_", "c_", "s_",
+    "index_exp", "ix_", "ndenumerate", "ndindex", "fill_diagonal", "diag_indices",
+    "diag_indices_from",
+
+    # matrixlib.__all__
+    "matrix", "bmat", "asmatrix",
+]
 
 _AnyStr_contra = TypeVar("_AnyStr_contra", LiteralString, builtins.str, bytes, contravariant=True)
 
@@ -636,7 +769,6 @@ class _MemMapIOProtocol(Protocol):
 class _SupportsWrite(Protocol[_AnyStr_contra]):
     def write(self, s: _AnyStr_contra, /) -> object: ...
 
-__all__: list[str]
 def __dir__() -> Sequence[str]: ...
 
 __version__: LiteralString
@@ -747,40 +879,170 @@ _DTypeBuiltinKind: TypeAlias = L[
     2,  # user-defined
 ]
 
+# NOTE: `type[S] | type[T]` is equivalent to `type[S | T]`
+_UnsignedIntegerCType: TypeAlias = type[
+    ct.c_uint8 | ct.c_uint16 | ct.c_uint32 | ct.c_uint64
+    | ct.c_ubyte | ct.c_ushort | ct.c_uint | ct.c_ulong | ct.c_ulonglong
+    | ct.c_size_t | ct.c_void_p
+]
+_SignedIntegerCType: TypeAlias = type[
+    ct.c_int8 | ct.c_int16 | ct.c_int32 | ct.c_int64
+    | ct.c_byte | ct.c_short | ct.c_int | ct.c_long | ct.c_longlong
+    | ct.c_ssize_t
+]
+_FloatingCType: TypeAlias = type[ct.c_float | ct.c_double | ct.c_longdouble]
+_IntegerCType: TypeAlias = _UnsignedIntegerCType | _SignedIntegerCType
+_NumberCType: TypeAlias = _IntegerCType | _IntegerCType
+_GenericCType: TypeAlias = _NumberCType | type[ct.c_bool | ct.c_char | ct.py_object[Any]]
+
+# some commonly used builtin types that are known to result in a
+# `dtype[object_]`, when their *type* is passed to the `dtype` constructor
+# NOTE: `builtins.object` should not be included here
+_BuiltinObjectLike: TypeAlias = (
+    slice | Decimal | Fraction | UUID
+    | dt.date | dt.time | dt.timedelta | dt.tzinfo
+    | tuple[Any, ...] | list[Any] | set[Any] | frozenset[Any] | dict[Any, Any]
+)  # fmt: skip
+
 @final
 class dtype(Generic[_DTypeScalar_co]):
     names: None | tuple[builtins.str, ...]
     def __hash__(self) -> int: ...
-    # Overload for subclass of generic
+
+    # `None` results in the default dtype
     @overload
     def __new__(
         cls,
-        dtype: type[_DTypeScalar_co],
+        dtype: None | type[float64],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[builtins.str, Any] = ...
+    ) -> dtype[float64]: ...
+
+    # Overload for `dtype` instances, scalar types, and instances that have a
+    # `dtype: dtype[_SCT]` attribute
+    @overload
+    def __new__(
+        cls,
+        dtype: _DTypeLike[_SCT],
         align: builtins.bool = ...,
         copy: builtins.bool = ...,
         metadata: dict[builtins.str, Any] = ...,
-    ) -> dtype[_DTypeScalar_co]: ...
-    # Overloads for string aliases, Python types, and some assorted
-    # other special cases. Order is sometimes important because of the
-    # subtype relationships
-    #
-    # builtins.bool < int < float < complex < object
-    #
-    # so we have to make sure the overloads for the narrowest type is
-    # first.
+    ) -> dtype[_SCT]: ...
+
     # Builtin types
+    #
+    # NOTE: Typecheckers act as if `bool <: int <: float <: complex <: object`,
+    # even though at runtime `int`, `float`, and `complex` aren't subtypes..
+    # This makes it impossible to express e.g. "a float that isn't an int",
+    # since type checkers treat `_: float` like `_: float | int`.
+    #
+    # For more details, see:
+    # - https://github.com/numpy/numpy/issues/27032#issuecomment-2278958251
+    # - https://typing.readthedocs.io/en/latest/spec/special-types.html#special-cases-for-float-and-complex
     @overload
-    def __new__(cls, dtype: type[builtins.bool], align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[np.bool]: ...
+    def __new__(
+        cls,
+        dtype: type[builtins.bool | np.bool],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[str, Any] = ...,
+    ) -> dtype[np.bool]: ...
+    # NOTE: `_: type[int]` also accepts `type[int | bool]`
     @overload
-    def __new__(cls, dtype: type[int], align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[int_]: ...
+    def __new__(
+        cls,
+        dtype: type[int | int_ | np.bool],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[str, Any] = ...,
+    ) -> dtype[int_ | np.bool]: ...
+    # NOTE: `_: type[float]` also accepts `type[float | int | bool]`
+    # NOTE: `float64` inheritcs from `float` at runtime; but this isn't
+    # reflected in these stubs. So an explicit `float64` is required here.
     @overload
-    def __new__(cls, dtype: None | type[float], align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[float64]: ...
+    def __new__(
+        cls,
+        dtype: None | type[float | float64 | int_ | np.bool],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[str, Any] = ...,
+    ) -> dtype[float64 | int_ | np.bool]: ...
+    # NOTE: `_: type[complex]` also accepts `type[complex | float | int | bool]`
     @overload
-    def __new__(cls, dtype: type[complex], align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[complex128]: ...
+    def __new__(
+        cls,
+        dtype: type[complex | complex128 | float64 | int_ | np.bool],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[str, Any] = ...,
+    ) -> dtype[complex128 | float64 | int_ | np.bool]: ...
     @overload
-    def __new__(cls, dtype: type[builtins.str], align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[str_]: ...
+    def __new__(
+        cls,
+        dtype: type[bytes],  # also includes `type[bytes_]`
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[str, Any] = ...,
+    ) -> dtype[bytes_]: ...
     @overload
-    def __new__(cls, dtype: type[bytes], align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[bytes_]: ...
+    def __new__(
+        cls,
+        dtype: type[str],  # also includes `type[str_]`
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[str, Any] = ...,
+    ) -> dtype[str_]: ...
+    # NOTE: These `memoryview` overloads assume PEP 688, which requires mypy to
+    # be run with the (undocumented) `--disable-memoryview-promotion` flag,
+    # This will be the default in a future mypy release, see:
+    # https://github.com/python/mypy/issues/15313
+    # Pyright / Pylance requires setting `disableBytesTypePromotions=true`,
+    # which is the default in strict mode
+    @overload
+    def __new__(
+        cls,
+        dtype: type[memoryview | void],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[str, Any] = ...,
+    ) -> dtype[void]: ...
+    # NOTE: `_: type[object]` would also accept e.g. `type[object | complex]`,
+    # and is therefore not included here
+    @overload
+    def __new__(
+        cls,
+        dtype: type[_BuiltinObjectLike | object_],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[str, Any] = ...,
+    ) -> dtype[object_]: ...
+
+    # Unions of builtins.
+    @overload
+    def __new__(
+        cls,
+        dtype: type[bytes | str],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[str, Any] = ...,
+    ) -> dtype[character]: ...
+    @overload
+    def __new__(
+        cls,
+        dtype: type[bytes | str | memoryview],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[str, Any] = ...,
+    ) -> dtype[flexible]: ...
+    @overload
+    def __new__(
+        cls,
+        dtype: type[complex | bytes | str | memoryview | _BuiltinObjectLike],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[str, Any] = ...,
+    ) -> dtype[np.bool | int_ | float64 | complex128 | flexible | object_]: ...
 
     # `unsignedinteger` string-based representations and ctypes
     @overload
@@ -797,7 +1059,6 @@ class dtype(Generic[_DTypeScalar_co]):
     def __new__(cls, dtype: _UShortCodes | type[ct.c_ushort], align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[ushort]: ...
     @overload
     def __new__(cls, dtype: _UIntCCodes | type[ct.c_uint], align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[uintc]: ...
-
     # NOTE: We're assuming here that `uint_ptr_t == size_t`,
     # an assumption that does not hold in rare cases (same for `ssize_t`)
     @overload
@@ -869,28 +1130,103 @@ class dtype(Generic[_DTypeScalar_co]):
     @overload
     def __new__(cls, dtype: _BytesCodes | type[ct.c_char], align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[bytes_]: ...
     @overload
-    def __new__(cls, dtype: _VoidCodes, align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[void]: ...
+    def __new__(cls, dtype: _VoidCodes | _VoidDTypeLike, align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[void]: ...
     @overload
     def __new__(cls, dtype: _ObjectCodes | type[ct.py_object[Any]], align: builtins.bool = ..., copy: builtins.bool = ..., metadata: dict[builtins.str, Any] = ...) -> dtype[object_]: ...
 
-    # dtype of a dtype is the same dtype
+    # `StringDType` requires special treatment because it has no scalar type
     @overload
     def __new__(
         cls,
-        dtype: dtype[_DTypeScalar_co],
+        dtype: dtypes.StringDType | _StringCodes,
         align: builtins.bool = ...,
         copy: builtins.bool = ...,
-        metadata: dict[builtins.str, Any] = ...,
-    ) -> dtype[_DTypeScalar_co]: ...
+        metadata: dict[builtins.str, Any] = ...
+    ) -> dtypes.StringDType: ...
+
+    # Combined char-codes and ctypes, analogous to the scalar-type hierarchy
     @overload
     def __new__(
         cls,
-        dtype: _SupportsDType[dtype[_DTypeScalar_co]],
+        dtype: _UnsignedIntegerCodes | _UnsignedIntegerCType,
         align: builtins.bool = ...,
         copy: builtins.bool = ...,
         metadata: dict[builtins.str, Any] = ...,
-    ) -> dtype[_DTypeScalar_co]: ...
-    # Handle strings that can't be expressed as literals; i.e. s1, s2, ...
+    ) -> dtype[unsignedinteger[Any]]: ...
+    @overload
+    def __new__(
+        cls,
+        dtype: _SignedIntegerCodes | _SignedIntegerCType,
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[builtins.str, Any] = ...,
+    ) -> dtype[signedinteger[Any]]: ...
+    @overload
+    def __new__(
+        cls,
+        dtype: _IntegerCodes | _IntegerCType,
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[builtins.str, Any] = ...,
+    ) -> dtype[integer[Any]]: ...
+    @overload
+    def __new__(
+        cls,
+        dtype: _FloatingCodes | _FloatingCType,
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[builtins.str, Any] = ...,
+    ) -> dtype[floating[Any]]: ...
+    @overload
+    def __new__(
+        cls,
+        dtype: _ComplexFloatingCodes,
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[builtins.str, Any] = ...,
+    ) -> dtype[complexfloating[Any, Any]]: ...
+    @overload
+    def __new__(
+        cls,
+        dtype: _InexactCodes | _FloatingCType,
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[builtins.str, Any] = ...,
+    ) -> dtype[inexact[Any]]: ...
+    @overload
+    def __new__(
+        cls,
+        dtype: _NumberCodes | _NumberCType,
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[builtins.str, Any] = ...,
+    ) -> dtype[number[Any]]: ...
+    @overload
+    def __new__(
+        cls,
+        dtype: _CharacterCodes | type[ct.c_char],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[builtins.str, Any] = ...,
+    ) -> dtype[character]: ...
+    @overload
+    def __new__(
+        cls,
+        dtype: _FlexibleCodes | type[ct.c_char],
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[builtins.str, Any] = ...,
+    ) -> dtype[flexible]: ...
+    @overload
+    def __new__(
+        cls,
+        dtype: _GenericCodes | _GenericCType,
+        align: builtins.bool = ...,
+        copy: builtins.bool = ...,
+        metadata: dict[builtins.str, Any] = ...,
+    ) -> dtype[generic]: ...
+
+    # Handle strings that can't be expressed as literals; i.e. "S1", "S2", ...
     @overload
     def __new__(
         cls,
@@ -899,16 +1235,12 @@ class dtype(Generic[_DTypeScalar_co]):
         copy: builtins.bool = ...,
         metadata: dict[builtins.str, Any] = ...,
     ) -> dtype[Any]: ...
-    # Catchall overload for void-likes
-    @overload
-    def __new__(
-        cls,
-        dtype: _VoidDTypeLike,
-        align: builtins.bool = ...,
-        copy: builtins.bool = ...,
-        metadata: dict[builtins.str, Any] = ...,
-    ) -> dtype[void]: ...
-    # Catchall overload for object-likes
+
+    # Catch-all overload for object-likes
+    # NOTE: `object_ | Any` is *not* equivalent to `Any` -- it describes some
+    # (static) type `T` s.t. `object_ <: T <: builtins.object` (`<:` denotes
+    # the subtyping relation, the (gradual) typing analogue of `issubclass()`).
+    # https://typing.readthedocs.io/en/latest/spec/concepts.html#union-types
     @overload
     def __new__(
         cls,
@@ -916,7 +1248,7 @@ class dtype(Generic[_DTypeScalar_co]):
         align: builtins.bool = ...,
         copy: builtins.bool = ...,
         metadata: dict[builtins.str, Any] = ...,
-    ) -> dtype[object_]: ...
+    ) -> dtype[object_ | Any]: ...
 
     def __class_getitem__(cls, item: Any, /) -> GenericAlias: ...
 
@@ -2961,13 +3293,41 @@ class bool(generic):
 
 bool_: TypeAlias = bool
 
+_StringType = TypeVar("_StringType", bound=str | bytes)
+_ShapeType = TypeVar("_ShapeType", bound=Any)
+_ObjectType = TypeVar("_ObjectType", bound=object)
+
+# A sequence-like interface like `collections.abc.Sequence`, but without the
+# irrelevant methods.
+class _SimpleSequence(Protocol):
+    def __len__(self, /) -> int: ...
+    def __getitem__(self, index: int, /) -> Any: ...
+
+# The `object_` constructor returns the passed object, so instances with type
+# `object_` cannot exists (at runtime).
 @final
 class object_(generic):
-    def __init__(self, value: object = ..., /) -> None: ...
+    @overload
+    def __new__(cls, nothing_to_see_here: None = ..., /) -> None: ...
+    @overload
+    def __new__(cls, stringy: _StringType, /) -> _StringType: ...
+    @overload
+    def __new__(
+        cls,
+        array: ndarray[_ShapeType, Any], /,
+    ) -> ndarray[_ShapeType, dtype[object_]]: ...
+    @overload
+    def __new__(cls, sequence: _SimpleSequence, /) -> NDArray[object_]: ...
+    @overload
+    def __new__(cls, value: _ObjectType, /) -> _ObjectType: ...
+    # catch-all
+    @overload
+    def __new__(cls, value: Any = ..., /) -> object | NDArray[object_]: ...
+
     @property
-    def real(self: _ArraySelf) -> _ArraySelf: ...
+    def real(self) -> object_: ...
     @property
-    def imag(self: _ArraySelf) -> _ArraySelf: ...
+    def imag(self) -> object_: ...
     # The 3 protocols below may or may not raise,
     # depending on the underlying object
     def __int__(self) -> int: ...
@@ -3189,7 +3549,6 @@ class inexact(number[_NBit1]):  # type: ignore
     def __getnewargs__(self: inexact[_64Bit]) -> tuple[float, ...]: ...
 
 _IntType = TypeVar("_IntType", bound=integer[Any])
-_FloatType = TypeVar('_FloatType', bound=floating[Any])
 
 class floating(inexact[_NBit1]):
     def __init__(self, value: _FloatValue = ..., /) -> None: ...
@@ -3619,27 +3978,30 @@ class busdaycalendar:
     @property
     def holidays(self) -> NDArray[datetime64]: ...
 
-class finfo(Generic[_FloatType]):
-    dtype: dtype[_FloatType]
-    bits: int
-    eps: _FloatType
-    epsneg: _FloatType
-    iexp: int
-    machep: int
-    max: _FloatType
-    maxexp: int
-    min: _FloatType
-    minexp: int
-    negep: int
-    nexp: int
-    nmant: int
-    precision: int
-    resolution: _FloatType
-    smallest_subnormal: _FloatType
+
+_FloatType_co = TypeVar('_FloatType_co', bound=floating[Any], covariant=True)
+
+class finfo(Generic[_FloatType_co]):
+    dtype: Final[dtype[_FloatType_co]]
+    bits: Final[int]
+    eps: Final[_FloatType_co]
+    epsneg: Final[_FloatType_co]
+    iexp: Final[int]
+    machep: Final[int]
+    max: Final[_FloatType_co]
+    maxexp: Final[int]
+    min: Final[_FloatType_co]
+    minexp: Final[int]
+    negep: Final[int]
+    nexp: Final[int]
+    nmant: Final[int]
+    precision: Final[int]
+    resolution: Final[_FloatType_co]
+    smallest_subnormal: Final[_FloatType_co]
     @property
-    def smallest_normal(self) -> _FloatType: ...
+    def smallest_normal(self) -> _FloatType_co: ...
     @property
-    def tiny(self) -> _FloatType: ...
+    def tiny(self) -> _FloatType_co: ...
     @overload
     def __new__(
         cls, dtype: inexact[_NBit1] | _DTypeLike[inexact[_NBit1]]
@@ -3653,18 +4015,22 @@ class finfo(Generic[_FloatType]):
         cls, dtype: str
     ) -> finfo[floating[Any]]: ...
 
-class iinfo(Generic[_IntType]):
-    dtype: dtype[_IntType]
-    kind: LiteralString
-    bits: int
-    key: LiteralString
+_IntType_co = TypeVar("_IntType_co", bound=integer[Any], covariant=True)
+
+class iinfo(Generic[_IntType_co]):
+    dtype: Final[dtype[_IntType_co]]
+    kind: Final[LiteralString]
+    bits: Final[int]
+    key: Final[LiteralString]
     @property
     def min(self) -> int: ...
     @property
     def max(self) -> int: ...
 
     @overload
-    def __new__(cls, dtype: _IntType | _DTypeLike[_IntType]) -> iinfo[_IntType]: ...
+    def __new__(
+        cls, dtype: _IntType_co | _DTypeLike[_IntType_co]
+    ) -> iinfo[_IntType_co]: ...
     @overload
     def __new__(cls, dtype: int | type[int]) -> iinfo[int_]: ...
     @overload

@@ -1513,6 +1513,18 @@ def searchsorted(a, v, side='left', sorter=None):
     >>> np.searchsorted([11,12,13,14,15], [-10, 20, 12, 13])
     array([0, 5, 1, 2])
 
+    When `sorter` is used, the returned indices refer to the sorted
+    array of `a` and not `a` itself:
+
+    >>> a = np.array([40, 10, 20, 30])
+    >>> sorter = np.argsort(a)
+    >>> sorter
+    array([1, 2, 3, 0])  # Indices that would sort the array 'a'
+    >>> result = np.searchsorted(a, 25, sorter=sorter)
+    >>> result 
+    2
+    >>> a[sorter[result]]
+    30  # The element at index 2 of the sorted array is 30.
     """
     return _wrapfunc(a, 'searchsorted', v, side=side, sorter=sorter)
 
@@ -2805,7 +2817,7 @@ def cumulative_sum(x, /, *, axis=None, dtype=None, out=None,
         but the type will be cast if necessary. See :ref:`ufuncs-output-type`
         for more details.
     include_initial : bool, optional
-        Boolean indicating whether to include the initial value (ones) as
+        Boolean indicating whether to include the initial value (zeros) as
         the first value in the output. With ``include_initial=True``
         the shape of the output is different than the shape of the input.
         Default: ``False``.

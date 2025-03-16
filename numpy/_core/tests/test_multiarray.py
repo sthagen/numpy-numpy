@@ -3345,6 +3345,30 @@ class TestMethods:
         a.dot(b=b, out=c)
         assert_equal(c, np.dot(a, b))
 
+    @pytest.mark.parametrize("dtype", [np.half, np.double, np.longdouble])
+    @pytest.mark.skipif(IS_WASM, reason="no wasm fp exception support")
+    def test_dot_errstate(self, dtype):
+        a = np.array([1, 1], dtype=dtype)
+        b = np.array([-np.inf, np.inf], dtype=dtype)
+
+        with np.errstate(invalid='raise'):
+            # there are two paths, depending on the number of dimensions - test
+            # them both
+            with pytest.raises(FloatingPointError,
+                    match="invalid value encountered in dot"):
+                np.dot(a, b)
+
+            # test that fp exceptions are properly cleared
+            np.dot(a, a)
+
+            with pytest.raises(FloatingPointError,
+                    match="invalid value encountered in dot"):
+                np.dot(a[np.newaxis, np.newaxis, ...],
+                       b[np.newaxis, ..., np.newaxis])
+
+            np.dot(a[np.newaxis, np.newaxis, ...],
+                   a[np.newaxis, ..., np.newaxis])
+
     def test_dot_type_mismatch(self):
         c = 1.
         A = np.array((1, 1), dtype='i,i')
@@ -8916,6 +8940,8 @@ class TestConversion:
         assert_raises(NotImplementedError, bool, np.array([NotConvertible()]))
         if IS_PYSTON:
             pytest.skip("Pyston disables recursion checking")
+        if IS_WASM:
+            pytest.skip("Pyodide/WASM has limited stack size")
 
         self_containing = np.array([None])
         self_containing[0] = self_containing

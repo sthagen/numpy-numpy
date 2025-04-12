@@ -8,6 +8,7 @@ from _typeshed import Incomplete
 from typing_extensions import deprecated
 
 from numpy import (
+    _ModeKind,
     _OrderKACF,
     _PartitionKind,
     _SortKind,
@@ -24,8 +25,10 @@ from numpy import (
 from numpy._globals import _NoValueType
 from numpy._typing import (
     ArrayLike,
+    _IntLike_co,
     NDArray,
     _ArrayLike,
+    _ArrayLikeInt_co,
     _DTypeLikeBool,
     _ArrayLikeInt,
     _ScalarLike_co,
@@ -214,10 +217,10 @@ __all__ = [
     "zeros_like",
 ]
 
-_ShapeType = TypeVar("_ShapeType", bound=tuple[int, ...])
-_ShapeType_co = TypeVar("_ShapeType_co", bound=tuple[int, ...], covariant=True)
-_DType = TypeVar("_DType", bound=dtype[Any])
-_DType_co = TypeVar("_DType_co", bound=dtype[Any], covariant=True)
+_ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...])
+_ShapeT_co = TypeVar("_ShapeT_co", bound=tuple[int, ...], covariant=True)
+_DTypeT = TypeVar("_DTypeT", bound=dtype[Any])
+_DTypeT_co = TypeVar("_DTypeT_co", bound=dtype[Any], covariant=True)
 _ArrayT = TypeVar("_ArrayT", bound=ndarray[Any, Any])
 _SCT = TypeVar("_SCT", bound=generic)
 # A subset of `MaskedArray` that can be parametrized w.r.t. `np.generic`
@@ -368,7 +371,7 @@ class MaskedIterator:
     def __setitem__(self, index, value): ...
     def __next__(self): ...
 
-class MaskedArray(ndarray[_ShapeType_co, _DType_co]):
+class MaskedArray(ndarray[_ShapeT_co, _DTypeT_co]):
     __array_priority__: Any
     def __new__(cls, data=..., mask=..., dtype=..., copy=..., subok=..., ndmin=..., fill_value=..., keep_mask=..., hard_mask=..., shrink=..., order=...): ...
     def __array_finalize__(self, obj): ...
@@ -377,13 +380,13 @@ class MaskedArray(ndarray[_ShapeType_co, _DType_co]):
     def __getitem__(self, indx): ...
     def __setitem__(self, indx, value): ...
     @property
-    def dtype(self) -> _DType_co: ...
+    def dtype(self) -> _DTypeT_co: ...
     @dtype.setter
-    def dtype(self: MaskedArray[Any, _DType], dtype: _DType, /) -> None: ...
+    def dtype(self: MaskedArray[Any, _DTypeT], dtype: _DTypeT, /) -> None: ...
     @property
-    def shape(self) -> _ShapeType_co: ...
+    def shape(self) -> _ShapeT_co: ...
     @shape.setter
-    def shape(self: MaskedArray[_ShapeType, Any], shape: _ShapeType, /) -> None: ...
+    def shape(self: MaskedArray[_ShapeT, Any], shape: _ShapeT, /) -> None: ...
     def __setmask__(self, mask, copy=...): ...
     @property
     def mask(self): ...
@@ -681,7 +684,41 @@ class MaskedArray(ndarray[_ShapeType_co, _DType_co]):
         kind: _PartitionKind = "introselect",
         order: str | Sequence[str] | None = None
     ) -> _MaskedArray[intp]: ...
-    def take(self, indices, axis=..., out=..., mode=...): ...
+
+    # Keep in-sync with np.ma.take
+    @overload
+    def take(  # type: ignore[overload-overlap]
+        self: _MaskedArray[_SCT],
+        indices: _IntLike_co,
+        axis: None = None,
+        out: None = None,
+        mode: _ModeKind = 'raise'
+    ) -> _SCT: ...
+    @overload
+    def take(
+        self: _MaskedArray[_SCT],
+        indices: _ArrayLikeInt_co,
+        axis: SupportsIndex | None = None,
+        out: None = None,
+        mode: _ModeKind = 'raise',
+    ) -> _MaskedArray[_SCT]: ...
+    @overload
+    def take(
+        self,
+        indices: _ArrayLikeInt_co,
+        axis: SupportsIndex | None,
+        out: _ArrayT,
+        mode: _ModeKind = 'raise',
+    ) -> _ArrayT: ...
+    @overload
+    def take(
+        self,
+        indices: _ArrayLikeInt_co,
+        axis: SupportsIndex | None = None,
+        *,
+        out: _ArrayT,
+        mode: _ModeKind = 'raise',
+    ) -> _ArrayT: ...
 
     copy: Any
     diagonal: Any
@@ -708,7 +745,7 @@ class MaskedArray(ndarray[_ShapeType_co, _DType_co]):
     def __reduce__(self): ...
     def __deepcopy__(self, memo=...): ...
 
-class mvoid(MaskedArray[_ShapeType_co, _DType_co]):
+class mvoid(MaskedArray[_ShapeT_co, _DTypeT_co]):
     def __new__(
         self,  # pyright: ignore[reportSelfClsParameterName]
         data,
@@ -992,7 +1029,56 @@ def argmax(
 minimum: _extrema_operation
 maximum: _extrema_operation
 
-def take(a, indices, axis=..., out=..., mode=...): ...
+@overload
+def take(  # type: ignore[overload-overlap]
+    a: _ArrayLike[_SCT],
+    indices: _IntLike_co,
+    axis: None = None,
+    out: None = None,
+    mode: _ModeKind = 'raise'
+) -> _SCT: ...
+@overload
+def take(
+    a: _ArrayLike[_SCT],
+    indices: _ArrayLikeInt_co,
+    axis: SupportsIndex | None = None,
+    out: None = None,
+    mode: _ModeKind = 'raise',
+) -> _MaskedArray[_SCT]: ...
+@overload
+def take(
+    a: ArrayLike,
+    indices: _IntLike_co,
+    axis: SupportsIndex | None = None,
+    out: None = None,
+    mode: _ModeKind = 'raise',
+) -> Any: ...
+@overload
+def take(
+    a: ArrayLike,
+    indices: _ArrayLikeInt_co,
+    axis: SupportsIndex | None = None,
+    out: None = None,
+    mode: _ModeKind = 'raise',
+) -> _MaskedArray[Any]: ...
+@overload
+def take(
+    a: ArrayLike,
+    indices: _ArrayLikeInt_co,
+    axis: SupportsIndex | None,
+    out: _ArrayT,
+    mode: _ModeKind = 'raise',
+) -> _ArrayT: ...
+@overload
+def take(
+    a: ArrayLike,
+    indices: _ArrayLikeInt_co,
+    axis: SupportsIndex | None = None,
+    *,
+    out: _ArrayT,
+    mode: _ModeKind = 'raise',
+) -> _ArrayT: ...
+
 def power(a, b, third=...): ...
 def argsort(a, axis=..., kind=..., order=..., endwith=..., fill_value=..., *, stable=...): ...
 @overload

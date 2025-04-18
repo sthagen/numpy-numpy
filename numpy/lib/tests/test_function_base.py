@@ -272,7 +272,7 @@ class TestCopy:
     def test_order(self):
         # It turns out that people rely on np.copy() preserving order by
         # default; changing this broke scikit-learn:
-        # github.com/scikit-learn/scikit-learn/commit/7842748cf777412c506a8c0ed28090711d3a3783  # noqa
+        # github.com/scikit-learn/scikit-learn/commit/7842748cf777412c506a8c0ed28090711d3a3783
         a = np.array([[1, 2], [3, 4]])
         assert_(a.flags.c_contiguous)
         assert_(not a.flags.f_contiguous)
@@ -2331,7 +2331,7 @@ class TestSinc:
         expected = sinc(x.astype(np.float64))
         assert_allclose(actual, expected)
         assert actual.dtype == np.float64
-    
+
     @pytest.mark.parametrize(
             'dtype',
             [np.float16, np.float32, np.longdouble, np.complex64, np.complex128]

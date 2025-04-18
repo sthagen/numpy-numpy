@@ -263,7 +263,7 @@ def get_fieldstructure(adtype, lastname=None, parents=None,):
                 parents[name] = []
             parents.update(get_fieldstructure(current, name, parents))
         else:
-            lastparent = list((parents.get(lastname, []) or []))
+            lastparent = list(parents.get(lastname, []) or [])
             if lastparent:
                 lastparent.append(lastname)
             elif lastname:
@@ -1399,7 +1399,7 @@ def stack_arrays(arrays, defaults=None, usemask=True, asrecarray=False,
         for (a, n, i, j) in zip(seqarrays, fldnames, offset[:-1], offset[1:]):
             names = a.dtype.names
             if names is None:
-                output['f%i' % len(seen)][i:j] = a
+                output[f'f{len(seen)}'][i:j] = a
             else:
                 for name in n:
                     output[name][i:j] = a[name]

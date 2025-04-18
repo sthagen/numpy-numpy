@@ -24,6 +24,7 @@ MAR_td64: MaskedNDArray[np.timedelta64]
 MAR_o: MaskedNDArray[np.object_]
 MAR_s: MaskedNDArray[np.str_]
 MAR_byte: MaskedNDArray[np.bytes_]
+MAR_V: MaskedNDArray[np.void]
 
 MAR_subclass: MaskedNDArraySubclass
 
@@ -163,7 +164,7 @@ assert_type(np.ma.take([1], [0]), MaskedNDArray[Any])
 assert_type(np.ma.take(np.eye(2), 1, axis=0), MaskedNDArray[np.float64])
 
 assert_type(MAR_f4.partition(1), None)
-assert_type(MAR_f4.partition(1, axis=0, kind='introselect', order='K'), None)
+assert_type(MAR_V.partition(1, axis=0, kind='introselect', order='K'), None)
 
 assert_type(MAR_f4.argpartition(1), MaskedNDArray[np.intp])
 assert_type(MAR_1d.argpartition(1, axis=0, kind='introselect', order='K'), MaskedNDArray[np.intp])
@@ -247,3 +248,23 @@ assert_type(np.ma.count(MAR_b, axis=(0,1)), NDArray[np.int_])
 assert_type(np.ma.count(MAR_o, keepdims=True), NDArray[np.int_])
 assert_type(np.ma.count(MAR_o, axis=None, keepdims=True), NDArray[np.int_])
 assert_type(np.ma.count(MAR_o, None, True), NDArray[np.int_])
+
+assert_type(MAR_f4.put([0,4,8], [10,20,30]), None)
+assert_type(MAR_f4.put(4, 999), None)
+assert_type(MAR_f4.put(4, 999, mode='clip'), None)
+
+assert_type(np.ma.put(MAR_f4, [0,4,8], [10,20,30]), None)
+assert_type(np.ma.put(MAR_f4, 4, 999), None)
+assert_type(np.ma.put(MAR_f4, 4, 999, mode='clip'), None)
+
+assert_type(np.ma.putmask(MAR_f4, [True, False], [0, 1]), None)
+
+assert_type(MAR_f4.filled(float('nan')), NDArray[np.float32])
+assert_type(MAR_i8.filled(), NDArray[np.int64])
+assert_type(MAR_1d.filled(), np.ndarray[tuple[int], np.dtype[Any]])
+
+assert_type(np.ma.filled(MAR_f4, float('nan')), NDArray[np.float32])
+assert_type(np.ma.filled([[1,2,3]]), NDArray[Any])
+# PyRight detects this one correctly, but mypy doesn't.
+# https://github.com/numpy/numpy/pull/28742#discussion_r2048968375
+assert_type(np.ma.filled(MAR_1d), np.ndarray[tuple[int], np.dtype[Any]])  # type: ignore[assert-type]

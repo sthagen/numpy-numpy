@@ -1621,8 +1621,7 @@ def savetxt(fname, X, fmt='%.18e', delimiter=' ', newline='\n', header='',
             for row in X:
                 row2 = []
                 for number in row:
-                    row2.append(number.real)
-                    row2.append(number.imag)
+                    row2.extend((number.real, number.imag))
                 s = format % tuple(row2) + newline
                 fh.write(s.replace('+-', '-'))
         else:
@@ -2298,14 +2297,13 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
             try:
                 converter.iterupgrade(current_column)
             except ConverterLockError:
-                errmsg = "Converter #%i is locked and cannot be upgraded: " % i
+                errmsg = f"Converter #{i} is locked and cannot be upgraded: "
                 current_column = map(itemgetter(i), rows)
                 for (j, value) in enumerate(current_column):
                     try:
                         converter.upgrade(value)
                     except (ConverterError, ValueError):
-                        errmsg += "(occurred line #%i for value '%s')"
-                        errmsg %= (j + 1 + skip_header, value)
+                        errmsg += f"(occurred line #{j + 1 + skip_header} for value '{value}')"
                         raise ConverterError(errmsg)
 
     # Check that we don't have invalid values
@@ -2313,7 +2311,7 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
     if nbinvalid > 0:
         nbrows = len(rows) + nbinvalid - skip_footer
         # Construct the error message
-        template = "    Line #%%i (got %%i columns instead of %i)" % nbcols
+        template = f"    Line #%i (got %i columns instead of {nbcols})"
         if skip_footer > 0:
             nbinvalid_skipped = len([_ for _ in invalid
                                      if _[0] > nbrows + skip_header])
@@ -2385,7 +2383,7 @@ def genfromtxt(fname, dtype=float, comments='#', delimiter=None,
                     column_types[i] = np.bytes_
 
         # Update string types to be the right length
-        sized_column_types = column_types[:]
+        sized_column_types = column_types.copy()
         for i, col_type in enumerate(column_types):
             if np.issubdtype(col_type, np.character):
                 n_chars = max(len(row[i]) for row in data)

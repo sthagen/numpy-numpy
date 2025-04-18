@@ -6,6 +6,7 @@ __docformat__ = "restructuredtext en"
 import numpy as np
 import numpy._core.numeric as nx
 from numpy._utils import asbytes, asunicode
+import itertools
 
 
 def _decode_line(line, encoding=None):
@@ -180,7 +181,7 @@ class LineSplitter:
         elif hasattr(delimiter, '__iter__'):
             _handyman = self._variablewidth_splitter
             idx = np.cumsum([0] + list(delimiter))
-            delimiter = [slice(i, j) for (i, j) in zip(idx[:-1], idx[1:])]
+            delimiter = [slice(i, j) for (i, j) in itertools.pairwise(idx)]
         # Delimiter is a single integer
         elif int(delimiter):
             (_handyman, delimiter) = (
@@ -889,7 +890,7 @@ def easy_dtype(ndtype, names=None, defaultfmt="f%i", **validationargs):
         elif ndtype.names is not None:
             validate = NameValidator(**validationargs)
             # Default initial names : should we change the format ?
-            numbered_names = tuple("f%i" % i for i in range(len(ndtype.names)))
+            numbered_names = tuple(f"f{i}" for i in range(len(ndtype.names)))
             if ((ndtype.names == numbered_names) and (defaultfmt != "f%i")):
                 ndtype.names = validate([''] * len(ndtype.names),
                                         defaultfmt=defaultfmt)

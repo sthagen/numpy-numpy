@@ -75,7 +75,7 @@ def parse_structure(astr):
                     break
         start += 1
         m = routine_end_re.search(astr, m.end())
-        ind = end = m and m.end() - 1 or len(astr)
+        ind = end = (m and m.end() - 1) or len(astr)
         spanlist.append((start, end))
     return spanlist
 
@@ -147,7 +147,7 @@ def expand_sub(substr, names):
 
     # convert all lists to named templates
     # new names are constructed as needed
-    substr = list_re.sub(listrepl, substr) 
+    substr = list_re.sub(listrepl, substr)
 
     numsubs = None
     base_rule = None

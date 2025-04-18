@@ -341,8 +341,8 @@ def check_items(all_dict, names, deprecated, others, module_name, dots=True):
 
     output = ""
 
-    output += "Non-deprecated objects in __all__: %i\n" % num_all
-    output += "Objects in refguide: %i\n\n" % num_ref
+    output += f"Non-deprecated objects in __all__: {num_all}\n"
+    output += f"Objects in refguide: {num_ref}\n\n"
 
     only_all, only_ref, missing = compare(all_dict, others, names, module_name)
     dep_in_ref = only_ref.intersection(deprecated)
@@ -489,11 +489,7 @@ def check_rest(module, names, dots=True):
         List of [(module_name, success_flag, output),...]
     """
 
-    try:
-        skip_types = (dict, str, unicode, float, int)
-    except NameError:
-        # python 3
-        skip_types = (dict, str, float, int)
+    skip_types = (dict, str, float, int)
 
     results = []
 
@@ -524,7 +520,7 @@ def check_rest(module, names, dots=True):
                                 traceback.format_exc()))
                 continue
 
-        m = re.search("([\x00-\x09\x0b-\x1f])", text)
+        m = re.search("([\x00-\x09\x0b-\x1f])", text)  # noqa: RUF039
         if m:
             msg = ("Docstring contains a non-printable character %r! "
                    "Maybe forgot r\"\"\"?" % (m.group(1),))

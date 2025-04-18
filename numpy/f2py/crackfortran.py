@@ -417,7 +417,7 @@ def readfortrancode(ffile, dowithline=show, istop=1):
                 beginpattern = beginpattern90
             outmess('\tReading file %s (format:%s%s)\n'
                     % (repr(currentfilename), sourcecodeform,
-                       strictf77 and ',strict' or ''))
+                       (strictf77 and ',strict') or ''))
 
         l = l.expandtabs().replace('\xa0', ' ')
         # Get rid of newline characters
@@ -1433,9 +1433,7 @@ def analyzeline(m, case, line):
         vars = groupcache[groupcounter].get('vars', {})
         last_name = None
         for l in ll:
-            l[0], l[1] = l[0].strip(), l[1].strip()
-            if l[0].startswith(','):
-                l[0] = l[0][1:]
+            l[0], l[1] = l[0].strip().removeprefix(','), l[1].strip()
             if l[0].startswith('('):
                 outmess('analyzeline: implied-DO list "%s" is not supported. Skipping.\n' % l[0])
                 continue
@@ -1492,7 +1490,7 @@ def analyzeline(m, case, line):
             line = '//' + line
 
         cl = []
-        [_, bn, ol] = re.split('/', line, maxsplit=2)
+        [_, bn, ol] = re.split('/', line, maxsplit=2)  # noqa: RUF039
         bn = bn.strip()
         if not bn:
             bn = '_BLNK_'
@@ -1537,8 +1535,6 @@ def analyzeline(m, case, line):
                     else:
                         rl[l] = l
                     groupcache[groupcounter]['use'][name]['map'] = rl
-            else:
-                pass
         else:
             print(m.groupdict())
             outmess('analyzeline: Could not crack the use statement.\n')
@@ -1635,7 +1631,7 @@ def removespaces(expr):
 
 def markinnerspaces(line):
     """
-    The function replace all spaces in the input variable line which are 
+    The function replace all spaces in the input variable line which are
     surrounded with quotation marks, with the triplet "@_@".
 
     For instance, for the input "a 'b c'" the function returns "a 'b@_@c'"
@@ -1648,7 +1644,7 @@ def markinnerspaces(line):
     -------
     str
 
-    """  
+    """
     fragment = ''
     inside = False
     current_quote = None
@@ -2100,9 +2096,9 @@ def postcrack(block, args=None, tab=''):
             mname = 'unknown__user__routines'
         if mname in userisdefined:
             i = 1
-            while '%s_%i' % (mname, i) in userisdefined:
+            while f"{mname}_{i}" in userisdefined:
                 i = i + 1
-            mname = '%s_%i' % (mname, i)
+            mname = f"{mname}_{i}"
         interface = {'block': 'interface', 'body': [],
                      'vars': {}, 'name': name + '_user_interface'}
         for e in block['externals']:
@@ -2512,7 +2508,7 @@ def get_parameters(vars, global_params={}):
                 if not selected_kind_re.match(v):
                     v_ = v.split('_')
                     # In case there are additive parameters
-                    if len(v_) > 1: 
+                    if len(v_) > 1:
                         v = ''.join(v_[:-1]).lower().replace(v_[-1].lower(), '')
 
             # Currently this will not work for complex numbers.

@@ -272,10 +272,10 @@ def is_unexpected(name):
     """Check if this needs to be considered."""
     return (
         '._' not in name and '.tests' not in name and '.setup' not in name
-		and name not in PUBLIC_MODULES
-		and name not in PUBLIC_ALIASED_MODULES
-		and name not in PRIVATE_BUT_PRESENT_MODULES
-	)
+        and name not in PUBLIC_MODULES
+        and name not in PUBLIC_ALIASED_MODULES
+        and name not in PRIVATE_BUT_PRESENT_MODULES
+    )
 
 
 if sys.version_info >= (3, 12):
@@ -448,14 +448,7 @@ def test_array_api_entry_point():
     numpy_in_sitepackages = sysconfig.get_path('platlib') in np.__file__
 
     eps = importlib.metadata.entry_points()
-    try:
-        xp_eps = eps.select(group="array_api")
-    except AttributeError:
-        # The select interface for entry_points was introduced in py3.10,
-        # deprecating its dict interface. We fallback to dict keys for finding
-        # Array API entry points so that running this test in <=3.9 will
-        # still work - see https://github.com/numpy/numpy/pull/19800.
-        xp_eps = eps.get("array_api", [])
+    xp_eps = eps.select(group="array_api")
     if len(xp_eps) == 0:
         if numpy_in_sitepackages:
             msg = "No entry points for 'array_api' found"
@@ -570,20 +563,21 @@ def test_functions_single_location():
     Test performs BFS search traversing NumPy's public API. It flags
     any function-like object that is accessible from more that one place.
     """
-    from typing import Any, Callable, Dict, List, Set, Tuple
+    from typing import Any
+    from collections.abc import Callable
     from numpy._core._multiarray_umath import (
         _ArrayFunctionDispatcher as dispatched_function
     )
 
-    visited_modules: Set[types.ModuleType] = {np}
-    visited_functions: Set[Callable[..., Any]] = set()
+    visited_modules: set[types.ModuleType] = {np}
+    visited_functions: set[Callable[..., Any]] = set()
     # Functions often have `__name__` overridden, therefore we need
     # to keep track of locations where functions have been found.
-    functions_original_paths: Dict[Callable[..., Any], str] = {}
+    functions_original_paths: dict[Callable[..., Any], str] = {}
 
     # Here we aggregate functions with more than one location.
     # It must be empty for the test to pass.
-    duplicated_functions: List[Tuple] = []
+    duplicated_functions: list[tuple] = []
 
     modules_queue = [np]
 

@@ -945,7 +945,7 @@ class TestDelete:
     def _check_inverse_of_slicing(self, indices):
         a_del = delete(self.a, indices)
         nd_a_del = delete(self.nd_a, indices, axis=1)
-        msg = 'Delete failed for obj: %r' % indices
+        msg = f'Delete failed for obj: {indices!r}'
         assert_array_equal(setxor1d(a_del, self.a[indices, ]), self.a,
                            err_msg=msg)
         xor = setxor1d(nd_a_del[0, :, 0], self.nd_a[0, indices, 0])
@@ -3057,7 +3057,7 @@ class TestInterp:
         assert_almost_equal(np.interp(x, xp, fp), [1, 2, np.nan, np.nan, 4])
 
     @pytest.fixture(params=[
-        lambda x: np.float64(x),
+        np.float64,
         lambda x: _make_complex(x, 0),
         lambda x: _make_complex(0, x),
         lambda x: _make_complex(x, np.multiply(x, -2))

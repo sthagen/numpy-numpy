@@ -67,7 +67,7 @@ _QuantileMethods = {
     # --- HYNDMAN and FAN METHODS
     # Discrete methods
     'inverted_cdf': {
-        'get_virtual_index': lambda n, quantiles: _inverted_cdf(n, quantiles),
+        'get_virtual_index': lambda n, quantiles: _inverted_cdf(n, quantiles),  # noqa: PLW0108
         'fix_gamma': None,  # should never be called
     },
     'averaged_inverted_cdf': {
@@ -79,8 +79,7 @@ _QuantileMethods = {
             where=gamma == 0),
     },
     'closest_observation': {
-        'get_virtual_index': lambda n, quantiles: _closest_observation(n,
-                                                                    quantiles),
+        'get_virtual_index': lambda n, quantiles: _closest_observation(n, quantiles),  # noqa: PLW0108
         'fix_gamma': None,  # should never be called
     },
     # Continuous methods
@@ -2134,9 +2133,9 @@ def disp(mesg, device=None, linefeed=True):
     if device is None:
         device = sys.stdout
     if linefeed:
-        device.write('%s\n' % mesg)
+        device.write(f'{mesg}\n')
     else:
-        device.write('%s' % mesg)
+        device.write(f'{mesg}')
     device.flush()
     return
 
@@ -2458,7 +2457,7 @@ class vectorize:
         if isinstance(otypes, str):
             for char in otypes:
                 if char not in typecodes['All']:
-                    raise ValueError("Invalid otype specified: %s" % (char,))
+                    raise ValueError(f"Invalid otype specified: {char}")
         elif iterable(otypes):
             otypes = [_get_vectorize_dtype(_nx.dtype(x)) for x in otypes]
         elif otypes is not None:
@@ -5436,7 +5435,7 @@ def delete(arr, obj, axis=None):
             if obj.shape != (N,):
                 raise ValueError('boolean array argument obj to delete '
                                  'must be one dimensional and match the axis '
-                                 'length of {}'.format(N))
+                                 f'length of {N}')
 
             # optimization, the other branch is slower
             keep = ~obj

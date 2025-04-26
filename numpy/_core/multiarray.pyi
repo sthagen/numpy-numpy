@@ -194,7 +194,7 @@ __all__ = [
 ]
 
 _ScalarT = TypeVar("_ScalarT", bound=generic)
-_DTypeT = TypeVar("_DTypeT", bound=np.dtype[Any])
+_DTypeT = TypeVar("_DTypeT", bound=np.dtype)
 _ArrayT = TypeVar("_ArrayT", bound=ndarray[Any, Any])
 _ArrayT_co = TypeVar(
     "_ArrayT_co",
@@ -384,7 +384,7 @@ def get_handler_name(a: NDArray[Any] = ..., /) -> str | None: ...
 def get_handler_version(a: NDArray[Any] = ..., /) -> int | None: ...
 def format_longfloat(x: np.longdouble, precision: int) -> str: ...
 def scalar(dtype: _DTypeT, object: bytes | object = ...) -> ndarray[tuple[()], _DTypeT]: ...
-def set_typeDict(dict_: dict[str, np.dtype[Any]], /) -> None: ...
+def set_typeDict(dict_: dict[str, np.dtype], /) -> None: ...
 typeinfo: Final[dict[str, np.dtype[np.generic]]]
 
 ALLOW_THREADS: Final[int]  # 0 or 1 (system-specific)
@@ -598,13 +598,9 @@ def can_cast(
     casting: _CastingKind | None = ...,
 ) -> bool: ...
 
-def min_scalar_type(
-    a: ArrayLike, /,
-) -> dtype[Any]: ...
+def min_scalar_type(a: ArrayLike, /) -> dtype: ...
 
-def result_type(
-    *arrays_and_dtypes: ArrayLike | DTypeLike,
-) -> dtype[Any]: ...
+def result_type(*arrays_and_dtypes: ArrayLike | DTypeLike) -> dtype: ...
 
 @overload
 def dot(a: ArrayLike, b: ArrayLike, out: None = ...) -> Any: ...
@@ -614,13 +610,13 @@ def dot(a: ArrayLike, b: ArrayLike, out: _ArrayT) -> _ArrayT: ...
 @overload
 def vdot(a: _ArrayLikeBool_co, b: _ArrayLikeBool_co, /) -> np.bool: ...  # type: ignore[misc]
 @overload
-def vdot(a: _ArrayLikeUInt_co, b: _ArrayLikeUInt_co, /) -> unsignedinteger[Any]: ...  # type: ignore[misc]
+def vdot(a: _ArrayLikeUInt_co, b: _ArrayLikeUInt_co, /) -> unsignedinteger: ...  # type: ignore[misc]
 @overload
-def vdot(a: _ArrayLikeInt_co, b: _ArrayLikeInt_co, /) -> signedinteger[Any]: ...  # type: ignore[misc]
+def vdot(a: _ArrayLikeInt_co, b: _ArrayLikeInt_co, /) -> signedinteger: ...  # type: ignore[misc]
 @overload
-def vdot(a: _ArrayLikeFloat_co, b: _ArrayLikeFloat_co, /) -> floating[Any]: ...  # type: ignore[misc]
+def vdot(a: _ArrayLikeFloat_co, b: _ArrayLikeFloat_co, /) -> floating: ...  # type: ignore[misc]
 @overload
-def vdot(a: _ArrayLikeComplex_co, b: _ArrayLikeComplex_co, /) -> complexfloating[Any, Any]: ...  # type: ignore[misc]
+def vdot(a: _ArrayLikeComplex_co, b: _ArrayLikeComplex_co, /) -> complexfloating: ...  # type: ignore[misc]
 @overload
 def vdot(a: _ArrayLikeTD64_co, b: _ArrayLikeTD64_co, /) -> timedelta64: ...
 @overload
@@ -794,7 +790,7 @@ def asfortranarray(
     like: _SupportsArrayFunc | None = ...,
 ) -> NDArray[Any]: ...
 
-def promote_types(__type1: DTypeLike, __type2: DTypeLike) -> dtype[Any]: ...
+def promote_types(__type1: DTypeLike, __type2: DTypeLike) -> dtype: ...
 
 # `sep` is a de facto mandatory argument, as its default value is deprecated
 @overload

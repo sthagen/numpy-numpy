@@ -6,15 +6,13 @@ from ._nested_sequence import (
     _NestedSequence as _NestedSequence,
 )
 from ._nbit_base import (
-    NBitBase as NBitBase,
+    NBitBase as NBitBase,  # pyright: ignore[reportDeprecated]
     _8Bit as _8Bit,
     _16Bit as _16Bit,
     _32Bit as _32Bit,
     _64Bit as _64Bit,
-    _80Bit as _80Bit,
     _96Bit as _96Bit,
     _128Bit as _128Bit,
-    _256Bit as _256Bit,
 )
 from ._nbit import (
     _NBitByte as _NBitByte,

@@ -63,6 +63,14 @@ np.ma.argmax(m, keepdims=1.0)  # E: No overload variant
 np.ma.argmax(m, out=1.0)  # E: No overload variant
 np.ma.argmax(m, fill_value=lambda x: 27)  # E: No overload variant
 
+m.all(axis=1.0)  # E: No overload variant
+m.all(keepdims=1.0)  # E: No overload variant
+m.all(out=1.0)  # E: No overload variant
+
+m.any(axis=1.0)  # E: No overload variant
+m.any(keepdims=1.0)  # E: No overload variant
+m.any(out=1.0)  # E: No overload variant
+
 m.sort(axis=(0,1))  # E: No overload variant
 m.sort(axis=None)  # E: No overload variant
 m.sort(kind='cabbage')  # E: No overload variant
@@ -122,5 +130,7 @@ np.ma.allequal(m, [1,2,3], fill_value=1.5)  # E: No overload variant
 np.ma.allclose(m, [1,2,3], masked_equal=4.5)  # E: No overload variant
 np.ma.allclose(m, [1,2,3], rtol='.4')  # E: No overload variant
 np.ma.allclose(m, [1,2,3], atol='.5')  # E: No overload variant
+
+m.__setmask__('mask')  # E: No overload variant
 
 m.swapaxes(axis1=1, axis2=0)  # E: No overload variant

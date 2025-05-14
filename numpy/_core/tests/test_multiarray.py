@@ -3948,16 +3948,15 @@ class TestBinop:
                     elif ufunc_override_expected:
                         assert_equal(arr_method(obj)[0], "__array_ufunc__",
                                      err_msg)
+                    elif (isinstance(obj, np.ndarray) and
+                        (type(obj).__array_ufunc__ is
+                         np.ndarray.__array_ufunc__)):
+                        # __array__ gets ignored
+                        res = first_out_arg(arr_method(obj))
+                        assert_(res.__class__ is obj.__class__, err_msg)
                     else:
-                        if (isinstance(obj, np.ndarray) and
-                            (type(obj).__array_ufunc__ is
-                             np.ndarray.__array_ufunc__)):
-                            # __array__ gets ignored
-                            res = first_out_arg(arr_method(obj))
-                            assert_(res.__class__ is obj.__class__, err_msg)
-                        else:
-                            assert_raises((TypeError, Coerced),
-                                          arr_method, obj, err_msg=err_msg)
+                        assert_raises((TypeError, Coerced),
+                                      arr_method, obj, err_msg=err_msg)
                     # obj __op__ arr
                     arr_rmethod = getattr(arr, f"__r{op}__")
                     if ufunc_override_expected:
@@ -3965,17 +3964,16 @@ class TestBinop:
                         assert_equal(res[0], "__array_ufunc__",
                                      err_msg=err_msg)
                         assert_equal(res[1], ufunc, err_msg=err_msg)
+                    elif (isinstance(obj, np.ndarray) and
+                            (type(obj).__array_ufunc__ is
+                             np.ndarray.__array_ufunc__)):
+                        # __array__ gets ignored
+                        res = first_out_arg(arr_rmethod(obj))
+                        assert_(res.__class__ is obj.__class__, err_msg)
                     else:
-                        if (isinstance(obj, np.ndarray) and
-                                (type(obj).__array_ufunc__ is
-                                 np.ndarray.__array_ufunc__)):
-                            # __array__ gets ignored
-                            res = first_out_arg(arr_rmethod(obj))
-                            assert_(res.__class__ is obj.__class__, err_msg)
-                        else:
-                            # __array_ufunc__ = "asdf" creates a TypeError
-                            assert_raises((TypeError, Coerced),
-                                          arr_rmethod, obj, err_msg=err_msg)
+                        # __array_ufunc__ = "asdf" creates a TypeError
+                        assert_raises((TypeError, Coerced),
+                                      arr_rmethod, obj, err_msg=err_msg)
 
                     # arr __iop__ obj
                     # array scalars don't have in-place operators
@@ -3990,16 +3988,15 @@ class TestBinop:
                             assert_equal(res[1], ufunc, err_msg)
                             assert_(type(res[-1]["out"]) is tuple, err_msg)
                             assert_(res[-1]["out"][0] is arr, err_msg)
+                        elif (isinstance(obj, np.ndarray) and
+                                (type(obj).__array_ufunc__ is
+                                np.ndarray.__array_ufunc__)):
+                            # __array__ gets ignored
+                            assert_(arr_imethod(obj) is arr, err_msg)
                         else:
-                            if (isinstance(obj, np.ndarray) and
-                                    (type(obj).__array_ufunc__ is
-                                    np.ndarray.__array_ufunc__)):
-                                # __array__ gets ignored
-                                assert_(arr_imethod(obj) is arr, err_msg)
-                            else:
-                                assert_raises((TypeError, Coerced),
-                                              arr_imethod, obj,
-                                              err_msg=err_msg)
+                            assert_raises((TypeError, Coerced),
+                                          arr_imethod, obj,
+                                          err_msg=err_msg)
 
                     op_fn = getattr(operator, op, None)
                     if op_fn is None:
@@ -4404,6 +4401,41 @@ class TestPickling:
 
         assert_equal(f_contiguous_array, depickled_f_contiguous_array)
 
+    @pytest.mark.skipif(pickle.HIGHEST_PROTOCOL < 5, reason="requires pickle protocol 5")
+    @pytest.mark.parametrize('transposed_contiguous_array',
+        [np.random.default_rng(42).random((2, 3, 4)).transpose((1, 0, 2)),
+         np.random.default_rng(42).random((2, 3, 4, 5)).transpose((1, 3, 0, 2))] +
+        [np.random.default_rng(42).random(np.arange(2, 7)).transpose(np.random.permutation(5)) for _ in range(3)])
+    def test_transposed_contiguous_array(self, transposed_contiguous_array):
+        buffers = []
+        # When using pickle protocol 5, arrays which can be transposed to c_contiguous
+        # can be serialized using out-of-band buffers
+        bytes_string = pickle.dumps(transposed_contiguous_array, protocol=5,
+                                    buffer_callback=buffers.append)
+
+        assert len(buffers) > 0
+
+        depickled_transposed_contiguous_array = pickle.loads(bytes_string,
+                                                    buffers=buffers)
+
+        assert_equal(transposed_contiguous_array, depickled_transposed_contiguous_array)
+
+    @pytest.mark.skipif(pickle.HIGHEST_PROTOCOL < 5, reason="requires pickle protocol 5")
+    def test_load_legacy_pkl_protocol5(self):
+        # legacy byte strs are dumped in 2.2.1
+        c_contiguous_dumped = b'\x80\x05\x95\x90\x00\x00\x00\x00\x00\x00\x00\x8c\x13numpy._core.numeric\x94\x8c\x0b_frombuffer\x94\x93\x94(\x96\x18\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x94\x8c\x05numpy\x94\x8c\x05dtype\x94\x93\x94\x8c\x02u1\x94\x89\x88\x87\x94R\x94(K\x03\x8c\x01|\x94NNNJ\xff\xff\xff\xffJ\xff\xff\xff\xffK\x00t\x94bK\x03K\x04K\x02\x87\x94\x8c\x01C\x94t\x94R\x94.'  # noqa: E501
+        f_contiguous_dumped = b'\x80\x05\x95\x90\x00\x00\x00\x00\x00\x00\x00\x8c\x13numpy._core.numeric\x94\x8c\x0b_frombuffer\x94\x93\x94(\x96\x18\x00\x00\x00\x00\x00\x00\x00\x00\x01\x02\x03\x04\x05\x06\x07\x08\t\n\x0b\x0c\r\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x94\x8c\x05numpy\x94\x8c\x05dtype\x94\x93\x94\x8c\x02u1\x94\x89\x88\x87\x94R\x94(K\x03\x8c\x01|\x94NNNJ\xff\xff\xff\xffJ\xff\xff\xff\xffK\x00t\x94bK\x03K\x04K\x02\x87\x94\x8c\x01F\x94t\x94R\x94.'   # noqa: E501
+        transposed_contiguous_dumped = b'\x80\x05\x95\xa5\x00\x00\x00\x00\x00\x00\x00\x8c\x16numpy._core.multiarray\x94\x8c\x0c_reconstruct\x94\x93\x94\x8c\x05numpy\x94\x8c\x07ndarray\x94\x93\x94K\x00\x85\x94C\x01b\x94\x87\x94R\x94(K\x01K\x04K\x03K\x02\x87\x94h\x03\x8c\x05dtype\x94\x93\x94\x8c\x02u1\x94\x89\x88\x87\x94R\x94(K\x03\x8c\x01|\x94NNNJ\xff\xff\xff\xffJ\xff\xff\xff\xffK\x00t\x94b\x89C\x18\x00\x01\x08\t\x10\x11\x02\x03\n\x0b\x12\x13\x04\x05\x0c\r\x14\x15\x06\x07\x0e\x0f\x16\x17\x94t\x94b.'   # noqa: E501
+        no_contiguous_dumped = b'\x80\x05\x95\x91\x00\x00\x00\x00\x00\x00\x00\x8c\x16numpy._core.multiarray\x94\x8c\x0c_reconstruct\x94\x93\x94\x8c\x05numpy\x94\x8c\x07ndarray\x94\x93\x94K\x00\x85\x94C\x01b\x94\x87\x94R\x94(K\x01K\x03K\x02\x86\x94h\x03\x8c\x05dtype\x94\x93\x94\x8c\x02u1\x94\x89\x88\x87\x94R\x94(K\x03\x8c\x01|\x94NNNJ\xff\xff\xff\xffJ\xff\xff\xff\xffK\x00t\x94b\x89C\x06\x00\x01\x04\x05\x08\t\x94t\x94b.'  # noqa: E501
+        x = np.arange(24, dtype='uint8').reshape(3, 4, 2)
+        assert_equal(x, pickle.loads(c_contiguous_dumped))
+        x = np.arange(24, dtype='uint8').reshape(3, 4, 2, order='F')
+        assert_equal(x, pickle.loads(f_contiguous_dumped))
+        x = np.arange(24, dtype='uint8').reshape(3, 4, 2).transpose((1, 0, 2))
+        assert_equal(x, pickle.loads(transposed_contiguous_dumped))
+        x = np.arange(12, dtype='uint8').reshape(3, 4)[:, :2]
+        assert_equal(x, pickle.loads(no_contiguous_dumped))
+
     def test_non_contiguous_array(self):
         non_contiguous_array = np.arange(12).reshape(3, 4)[:, :2]
         assert not non_contiguous_array.flags.c_contiguous
@@ -4411,10 +4443,13 @@ class TestPickling:
 
         # make sure non-contiguous arrays can be pickled-depickled
         # using any protocol
+        buffers = []
         for proto in range(2, pickle.HIGHEST_PROTOCOL + 1):
             depickled_non_contiguous_array = pickle.loads(
-                    pickle.dumps(non_contiguous_array, protocol=proto))
+                    pickle.dumps(non_contiguous_array, protocol=proto,
+                                 buffer_callback=buffers.append if proto >= 5 else None))
 
+            assert_equal(len(buffers), 0)
             assert_equal(non_contiguous_array, depickled_non_contiguous_array)
 
     def test_roundtrip(self):
@@ -10291,6 +10326,21 @@ def test_argsort_int(N, dtype):
     arr[N - 1] = maxv
     assert_arg_sorted(arr, np.argsort(arr, kind='quick'))
 
+# Test large arrays that leverage openMP implementations from x86-simd-sort:
+@pytest.mark.parametrize("dtype", [np.float16, np.float32, np.float64])
+def test_sort_largearrays(dtype):
+    N = 1000000
+    rnd = np.random.RandomState(1100710816)
+    arr = -0.5 + rnd.random(N).astype(dtype)
+    assert_equal(np.sort(arr, kind='quick'), np.sort(arr, kind='heap'))
+
+# Test large arrays that leverage openMP implementations from x86-simd-sort:
+@pytest.mark.parametrize("dtype", [np.float32, np.float64])
+def test_argsort_largearrays(dtype):
+    N = 1000000
+    rnd = np.random.RandomState(1100710816)
+    arr = -0.5 + rnd.random(N).astype(dtype)
+    assert_arg_sorted(arr, np.argsort(arr, kind='quick'))
 
 @pytest.mark.skipif(not HAS_REFCOUNT, reason="Python lacks refcounts")
 def test_gh_22683():

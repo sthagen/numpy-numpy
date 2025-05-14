@@ -162,8 +162,6 @@ PUBLIC_ALIASED_MODULES = [
 
 
 PRIVATE_BUT_PRESENT_MODULES = ['numpy.' + s for s in [
-    "compat",
-    "compat.py3k",
     "conftest",
     "core",
     "core.multiarray",
@@ -284,8 +282,6 @@ else:
     SKIP_LIST = ["numpy.distutils.msvc9compiler"]
 
 
-# suppressing warnings from deprecated modules
-@pytest.mark.filterwarnings("ignore:.*np.compat.*:DeprecationWarning")
 def test_all_modules_are_expected():
     """
     Test that we don't add anything that looks like a new public module by
@@ -783,8 +779,7 @@ def test___qualname___and___module___attribute():
                 inspect.ismodule(member) and  # it's a module
                 "numpy" in member.__name__ and  # inside NumPy
                 not member_name.startswith("_") and  # not private
-                member_name != "tests" and
-                member_name != "typing" and  # 2024-12: type names don't match
+                member_name not in {"tests", "typing"} and  # 2024-12: type names don't match
                 "numpy._core" not in member.__name__ and  # outside _core
                 member not in visited_modules  # not visited yet
             ):

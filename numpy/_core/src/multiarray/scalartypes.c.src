@@ -1940,33 +1940,6 @@ gentype_transpose_get(PyObject *self, void *NPY_UNUSED(ignored))
     return self;
 }
 
-static PyObject *
-gentype_newbyteorder(PyObject *NPY_UNUSED(self), void *NPY_UNUSED(ignored))
-{
-    PyErr_SetString(PyExc_AttributeError, 
-                    "`newbyteorder` was removed from scalar types in NumPy 2.0. "
-                    "Use `sc.view(sc.dtype.newbyteorder(order))` instead.");
-    return NULL;
-}
-
-static PyObject *
-gentype_itemset(PyObject *NPY_UNUSED(self), void *NPY_UNUSED(ignored))
-{
-    PyErr_SetString(PyExc_AttributeError, 
-                    "`itemset` was removed from scalar types in NumPy 2.0 "
-                    "because scalars are immutable.");
-    return NULL;
-}
-
-static PyObject *
-gentype_ptp(PyObject *NPY_UNUSED(self), void *NPY_UNUSED(ignored))
-{
-    PyErr_SetString(PyExc_AttributeError, 
-                    "`ptp` was removed from scalar types in NumPy 2.0. "
-                    "For a scalar, the range of values always equals 0.");
-    return NULL;
-}
-
 
 static PyGetSetDef gentype_getsets[] = {
     {"ndim",
@@ -2010,15 +1983,6 @@ static PyGetSetDef gentype_getsets[] = {
         (setter)0, NULL, NULL},
     {"T",
         (getter)gentype_transpose_get,
-        (setter)0, NULL, NULL},
-    {"newbyteorder",
-        (getter)gentype_newbyteorder,
-        (setter)0, NULL, NULL},
-    {"itemset",
-        (getter)gentype_itemset,
-        (setter)0, NULL, NULL},
-    {"ptp",
-        (getter)gentype_ptp,
         (setter)0, NULL, NULL},
     {"device",
         (getter)array_device,
@@ -2185,7 +2149,7 @@ gentype_byteswap(PyObject *self, PyObject *args, PyObject *kwds)
  * #name = take, getfield, put, repeat, tofile, mean, trace, diagonal, clip,
  *         std, var, sum, cumsum, prod, cumprod, compress, sort, argsort,
  *         round, argmax, argmin, max, min, any, all, astype, resize,
- *         reshape, choose, tostring, tobytes, copy, searchsorted, view,
+ *         reshape, choose, tobytes, copy, searchsorted, view,
  *         flatten, ravel, squeeze#
  */
 static PyObject *
@@ -2642,9 +2606,6 @@ static PyMethodDef gentype_methods[] = {
         METH_VARARGS | METH_KEYWORDS, NULL},
     {"tofile",
         (PyCFunction)gentype_tofile,
-        METH_VARARGS | METH_KEYWORDS, NULL},
-    {"tostring",
-        (PyCFunction)gentype_tostring,
         METH_VARARGS | METH_KEYWORDS, NULL},
     {"byteswap",
         (PyCFunction)gentype_byteswap,

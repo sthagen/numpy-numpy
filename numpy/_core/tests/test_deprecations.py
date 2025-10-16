@@ -197,40 +197,11 @@ class FlatteningConcatenateUnsafeCast(_DeprecationTestCase):
 
 
 class TestCtypesGetter(_DeprecationTestCase):
-    # Deprecated 2021-05-18, Numpy 1.21.0
-    warning_cls = DeprecationWarning
     ctypes = np.array([1]).ctypes
 
-    @pytest.mark.parametrize(
-        "name", ["get_data", "get_shape", "get_strides", "get_as_parameter"]
-    )
-    def test_deprecated(self, name: str) -> None:
-        func = getattr(self.ctypes, name)
-        self.assert_deprecated(func)
-
-    @pytest.mark.parametrize(
-        "name", ["data", "shape", "strides", "_as_parameter_"]
-    )
+    @pytest.mark.parametrize("name", ["data", "shape", "strides", "_as_parameter_"])
     def test_not_deprecated(self, name: str) -> None:
         self.assert_not_deprecated(lambda: getattr(self.ctypes, name))
-
-
-class TestQuantileInterpolationDeprecation(_DeprecationTestCase):
-    # Deprecated 2021-11-08, NumPy 1.22
-    @pytest.mark.parametrize("func",
-        [np.percentile, np.quantile, np.nanpercentile, np.nanquantile])
-    def test_deprecated(self, func):
-        self.assert_deprecated(
-            lambda: func([0., 1.], 0., interpolation="linear"))
-        self.assert_deprecated(
-            lambda: func([0., 1.], 0., interpolation="nearest"))
-
-    @pytest.mark.parametrize("func",
-            [np.percentile, np.quantile, np.nanpercentile, np.nanquantile])
-    def test_both_passed(self, func):
-        with pytest.warns(DeprecationWarning):
-            with pytest.raises(TypeError):
-                func([0., 1.], 0., interpolation="nearest", method="nearest")
 
 
 class TestPyIntConversion(_DeprecationTestCase):
@@ -309,7 +280,7 @@ class TestMathAlias(_DeprecationTestCase):
 class TestLibImports(_DeprecationTestCase):
     # Deprecated in Numpy 1.26.0, 2023-09
     def test_lib_functions_deprecation_call(self):
-        from numpy import in1d, row_stack, trapz
+        from numpy import row_stack, trapz
         from numpy._core.numerictypes import maximum_sctype
         from numpy.lib._function_base_impl import disp
         from numpy.lib._npyio_impl import recfromcsv, recfromtxt
@@ -328,7 +299,6 @@ class TestLibImports(_DeprecationTestCase):
         self.assert_deprecated(get_array_wrap)
         self.assert_deprecated(lambda: maximum_sctype(int))
 
-        self.assert_deprecated(lambda: in1d([1], [1]))
         self.assert_deprecated(lambda: row_stack([[]]))
         self.assert_deprecated(lambda: trapz([1], [1]))
         self.assert_deprecated(lambda: np.chararray)

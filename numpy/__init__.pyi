@@ -6,7 +6,7 @@ import ctypes as ct
 import array as _array
 import datetime as dt
 from abc import abstractmethod
-from types import EllipsisType, ModuleType, TracebackType, MappingProxyType, GenericAlias
+from types import EllipsisType, GetSetDescriptorType, ModuleType, TracebackType, MappingProxyType, GenericAlias
 from decimal import Decimal
 from fractions import Fraction
 from uuid import UUID
@@ -407,7 +407,7 @@ from numpy._core.shape_base import (
 
 from ._expired_attrs_2_0 import __expired_attributes__ as __expired_attributes__
 from ._globals import _CopyMode as _CopyMode
-from ._globals import _NoValue as _NoValue
+from ._globals import _NoValue as _NoValue, _NoValueType
 
 from numpy.lib import (
     scimath as emath,
@@ -417,9 +417,8 @@ from numpy.lib._arraypad_impl import (
     pad,
 )
 
-from numpy.lib._arraysetops_impl import (  # type: ignore[deprecated]
+from numpy.lib._arraysetops_impl import (
     ediff1d,
-    in1d,
     intersect1d,
     isin,
     setdiff1d,
@@ -606,6 +605,7 @@ from numpy.lib._utils_impl import (
 from numpy.matrixlib import (
     asmatrix,
     bmat,
+    matrix,
 )
 
 __all__ = [  # noqa: RUF022
@@ -700,7 +700,7 @@ __all__ = [  # noqa: RUF022
     "iscomplexobj", "isrealobj", "imag", "iscomplex", "isreal", "nan_to_num", "real",
     "real_if_close", "typename", "mintypecode", "common_type",
     # lib._arraysetops_impl.__all__
-    "ediff1d", "in1d", "intersect1d", "isin", "setdiff1d", "setxor1d", "union1d",
+    "ediff1d", "intersect1d", "isin", "setdiff1d", "setxor1d", "union1d",
     "unique", "unique_all", "unique_counts", "unique_inverse", "unique_values",
     # lib._ufunclike_impl.__all__
     "fix", "isneginf", "isposinf",
@@ -767,6 +767,7 @@ _RealArrayT = TypeVar("_RealArrayT", bound=NDArray[floating | integer | timedelt
 _NumericArrayT = TypeVar("_NumericArrayT", bound=NDArray[number | timedelta64 | object_])
 
 _ShapeT = TypeVar("_ShapeT", bound=_Shape)
+_Shape1T = TypeVar("_Shape1T", bound=tuple[int, *tuple[int, ...]])
 _ShapeT_co = TypeVar("_ShapeT_co", bound=_Shape, default=_AnyShape, covariant=True)
 _1DShapeT = TypeVar("_1DShapeT", bound=_1D)
 _2DShapeT_co = TypeVar("_2DShapeT_co", bound=_2D, default=_2D, covariant=True)
@@ -990,7 +991,7 @@ _NDIterFlagsOp: TypeAlias = L[
     "updateifcopy",
     "virtual",
     "writeonly",
-    "writemasked"
+    "writemasked",
 ]
 
 _MemMapModeKind: TypeAlias = L[
@@ -1687,6 +1688,15 @@ class _ArrayOrScalarCommon:
     def tolist(self) -> Any: ...
     def to_device(self, device: L["cpu"], /, *, stream: int | Any | None = ...) -> Self: ...
 
+    # NOTE: for `generic`, these two methods don't do anything
+    def fill(self, value: Incomplete, /) -> None: ...
+    def put(self, /, indices: _ArrayLikeInt_co, values: ArrayLike, mode: _ModeKind = "raise") -> None: ...
+
+    # NOTE: even on `generic` this seems to work
+    def setflags(
+        self, /, write: builtins.bool | None = None, align: builtins.bool | None = None, uic: builtins.bool | None = None
+    ) -> None: ...
+
     @property
     def __array_interface__(self) -> dict[str, Any]: ...
     @property
@@ -2168,7 +2178,6 @@ class ndarray(_ArrayOrScalarCommon, Generic[_ShapeT_co, _DTypeT_co]):
     @deprecated("Setting the strides on a NumPy array has been deprecated in NumPy 2.4")
     def strides(self, value: _ShapeLike) -> None: ...
     def byteswap(self, inplace: builtins.bool = ...) -> Self: ...
-    def fill(self, value: Any, /) -> None: ...
     @property
     def flat(self) -> flatiter[Self]: ...
 
@@ -2349,12 +2358,8 @@ class ndarray(_ArrayOrScalarCommon, Generic[_ShapeT_co, _DTypeT_co]):
     @overload
     def dot(self, b: ArrayLike, out: _ArrayT) -> _ArrayT: ...
 
-    # `nonzero()` is deprecated for 0d arrays/generics
+    # `nonzero()` raises for 0d arrays/generics
     def nonzero(self) -> tuple[ndarray[tuple[int], np.dtype[intp]], ...]: ...
-
-    # `put` is technically available to `generic`,
-    # but is pointless as `generic`s are immutable
-    def put(self, /, indices: _ArrayLikeInt_co, values: ArrayLike, mode: _ModeKind = "raise") -> None: ...
 
     @overload
     def searchsorted(
@@ -3574,13 +3579,47 @@ class ndarray(_ArrayOrScalarCommon, Generic[_ShapeT_co, _DTypeT_co]):
 class generic(_ArrayOrScalarCommon, Generic[_ItemT_co]):
     @abstractmethod
     def __new__(cls) -> Self: ...
-    def __hash__(self) -> int: ...
+
+    if sys.version_info >= (3, 12):
+        def __buffer__(self, flags: int, /) -> memoryview: ...
+
     @overload
     def __array__(self, dtype: None = None, /) -> ndarray[tuple[()], dtype[Self]]: ...
     @overload
     def __array__(self, dtype: _DTypeT, /) -> ndarray[tuple[()], _DTypeT]: ...
-    if sys.version_info >= (3, 12):
-        def __buffer__(self, flags: int, /) -> memoryview: ...
+
+    @overload
+    def __array_wrap__(
+        self,
+        array: ndarray[_ShapeT, _DTypeT],
+        context: tuple[ufunc, tuple[object, ...], int] | None,
+        return_scalar: L[False],
+        /,
+    ) -> ndarray[_ShapeT, _DTypeT]: ...
+    @overload
+    def __array_wrap__(
+        self,
+        array: ndarray[tuple[()], dtype[_ScalarT]],
+        context: tuple[ufunc, tuple[object, ...], int] | None = None,
+        return_scalar: L[True] = True,
+        /,
+    ) -> _ScalarT: ...
+    @overload
+    def __array_wrap__(
+        self,
+        array: ndarray[_Shape1T, _DTypeT],
+        context: tuple[ufunc, tuple[object, ...], int] | None = None,
+        return_scalar: L[True] = True,
+        /,
+    ) -> ndarray[_Shape1T, _DTypeT]: ...
+    @overload
+    def __array_wrap__(
+        self,
+        array: ndarray[_ShapeT, dtype[_ScalarT]],
+        context: tuple[ufunc, tuple[object, ...], int] | None = None,
+        return_scalar: L[True] = True,
+        /,
+    ) -> _ScalarT | ndarray[_ShapeT, dtype[_ScalarT]]: ...
 
     @property
     def base(self) -> None: ...
@@ -3599,10 +3638,33 @@ class generic(_ArrayOrScalarCommon, Generic[_ItemT_co]):
     def item(self, /) -> _ItemT_co: ...
     @overload
     def item(self, arg0: L[0, -1] | tuple[L[0, -1]] | tuple[()] = ..., /) -> _ItemT_co: ...
+    @override
     def tolist(self, /) -> _ItemT_co: ...
 
-    def byteswap(self, inplace: L[False] = ...) -> Self: ...
+    # NOTE: these technically exist, but will always raise when called
+    def trace(  # type: ignore[misc]
+        self: Never,
+        /,
+        offset: Never = ...,
+        axis1: Never = ...,
+        axis2: Never = ...,
+        dtype: Never = ...,
+        out: Never = ...,
+    ) -> Never: ...
+    def diagonal(self: Never, /, offset: Never = ..., axis1: Never = ..., axis2: Never = ...) -> Never: ...  # type: ignore[misc]
+    def swapaxes(self: Never, /, axis1: Never, axis2: Never) -> Never: ...  # type: ignore[misc]
+    def sort(self: Never, /, axis: Never = ..., kind: Never = ..., order: Never = ...) -> Never: ...  # type: ignore[misc]
+    def nonzero(self: Never, /) -> Never: ...  # type: ignore[misc]
+    def setfield(self: Never, /, val: Never, dtype: Never, offset: Never = ...) -> None: ...  # type: ignore[misc]
+    def searchsorted(self: Never, /, v: Never, side: Never = ..., sorter: Never = ...) -> Never: ...  # type: ignore[misc]
 
+    # NOTE: this wont't raise, but won't do anything either
+    def resize(self, new_shape: L[0, -1] | tuple[L[0, -1]] | tuple[()], /, *, refcheck: builtins.bool = False) -> None: ...
+
+    #
+    def byteswap(self, /, inplace: L[False] = False) -> Self: ...
+
+    #
     @overload
     def astype(
         self,
@@ -3857,8 +3919,8 @@ class number(generic[_NumberItemT_co], Generic[_NBit, _NumberItemT_co]):
     def __rsub__(self, other: _NumberLike_co, /) -> Incomplete: ...
     def __mul__(self, other: _NumberLike_co, /) -> Incomplete: ...
     def __rmul__(self, other: _NumberLike_co, /) -> Incomplete: ...
-    def __pow__(self, other: _NumberLike_co, /) -> Incomplete: ...
-    def __rpow__(self, other: _NumberLike_co, /) -> Incomplete: ...
+    def __pow__(self, other: _NumberLike_co, mod: None = None, /) -> Incomplete: ...
+    def __rpow__(self, other: _NumberLike_co, mod: None = None, /) -> Incomplete: ...
     def __truediv__(self, other: _NumberLike_co, /) -> Incomplete: ...
     def __rtruediv__(self, other: _NumberLike_co, /) -> Incomplete: ...
 
@@ -5529,11 +5591,10 @@ class datetime64(_RealMixin, generic[_DT64ItemT_co], Generic[_DT64ItemT_co]):
     @overload
     def __ge__(self, other: _SupportsGT, /) -> bool_: ...
 
-class flexible(_RealMixin, generic[_FlexibleItemT_co], Generic[_FlexibleItemT_co]):
-    @abstractmethod
-    def __new__(cls) -> Self: ...
+@final  # cannot be subclassed at runtime
+class flexible(_RealMixin, generic[_FlexibleItemT_co], Generic[_FlexibleItemT_co]): ...  # type: ignore[misc]
 
-class void(flexible[bytes | tuple[Any, ...]]):
+class void(flexible[bytes | tuple[Any, ...]]):  # type: ignore[misc]
     @overload
     def __new__(cls, value: _IntLike_co | bytes, /, dtype: None = None) -> Self: ...
     @overload
@@ -5547,13 +5608,13 @@ class void(flexible[bytes | tuple[Any, ...]]):
 
     def setfield(self, val: ArrayLike, dtype: DTypeLike, offset: int = ...) -> None: ...
 
-class character(flexible[_CharacterItemT_co], Generic[_CharacterItemT_co]):
+class character(flexible[_CharacterItemT_co], Generic[_CharacterItemT_co]):  # type: ignore[misc]
     @abstractmethod
     def __new__(cls) -> Self: ...
 
 # NOTE: Most `np.bytes_` / `np.str_` methods return their builtin `bytes` / `str` counterpart
 
-class bytes_(character[bytes], bytes):
+class bytes_(character[bytes], bytes):  # type: ignore[misc]
     @overload
     def __new__(cls, o: object = ..., /) -> Self: ...
     @overload
@@ -5562,7 +5623,7 @@ class bytes_(character[bytes], bytes):
     #
     def __bytes__(self, /) -> bytes: ...
 
-class str_(character[str], str):
+class str_(character[str], str):  # type: ignore[misc]
     @overload
     def __new__(cls, value: object = ..., /) -> Self: ...
     @overload
@@ -5764,30 +5825,48 @@ class broadcast:
 
 @final
 class busdaycalendar:
-    def __new__(
-        cls,
-        weekmask: ArrayLike = ...,
-        holidays: ArrayLike | dt.date | _NestedSequence[dt.date] = ...,
-    ) -> busdaycalendar: ...
+    def __init__(
+        self,
+        /,
+        weekmask: str | Sequence[int | bool_ | integer] | _SupportsArray[dtype[bool_ | integer]] = "1111100",
+        holidays: Sequence[dt.date | datetime64] | _SupportsArray[dtype[datetime64]] | None = None,
+    ) -> None: ...
     @property
-    def weekmask(self) -> NDArray[np.bool]: ...
+    def weekmask(self) -> ndarray[tuple[int], dtype[bool_]]: ...
     @property
-    def holidays(self) -> NDArray[datetime64]: ...
+    def holidays(self) -> ndarray[tuple[int], dtype[datetime64[dt.date]]]: ...
 
 @final
 class nditer:
-    def __new__(
-        cls,
-        op: ArrayLike | Sequence[ArrayLike | None],
-        flags: Sequence[_NDIterFlagsKind] | None = ...,
-        op_flags: Sequence[Sequence[_NDIterFlagsOp]] | None = ...,
-        op_dtypes: DTypeLike | Sequence[DTypeLike | None] | None = ...,
-        order: _OrderKACF = ...,
-        casting: _CastingKind = ...,
-        op_axes: Sequence[Sequence[SupportsIndex]] | None = ...,
-        itershape: _ShapeLike | None = ...,
-        buffersize: SupportsIndex = ...,
-    ) -> nditer: ...
+    @overload
+    def __init__(
+        self,
+        /,
+        op: ArrayLike,
+        flags: Sequence[_NDIterFlagsKind] | None = None,
+        op_flags: Sequence[_NDIterFlagsOp] | None = None,
+        op_dtypes: DTypeLike | None = None,
+        order: _OrderKACF = "K",
+        casting: _CastingKind = "safe",
+        op_axes: Sequence[SupportsIndex] | None = None,
+        itershape: _ShapeLike | None = None,
+        buffersize: SupportsIndex = 0,
+    ) -> None: ...
+    @overload
+    def __init__(
+        self,
+        /,
+        op: Sequence[ArrayLike | None],
+        flags: Sequence[_NDIterFlagsKind] | None = None,
+        op_flags: Sequence[Sequence[_NDIterFlagsOp]] | None = None,
+        op_dtypes: Sequence[DTypeLike | None] | None = None,
+        order: _OrderKACF = "K",
+        casting: _CastingKind = "safe",
+        op_axes: Sequence[Sequence[SupportsIndex]] | None = None,
+        itershape: _ShapeLike | None = None,
+        buffersize: SupportsIndex = 0,
+    ) -> None: ...
+
     def __enter__(self) -> nditer: ...
     def __exit__(
         self,
@@ -5902,7 +5981,8 @@ class vectorize:
     __doc__: str | None
     def __init__(
         self,
-        pyfunc: Callable[..., Any],
+        /,
+        pyfunc: Callable[..., Any] | _NoValueType = ...,  # = _NoValue
         otypes: str | Iterable[DTypeLike] | None = None,
         doc: str | None = None,
         excluded: Iterable[int | str] | None = None,
@@ -5984,192 +6064,6 @@ class poly1d:
         m: SupportsInt | SupportsIndex = 1,
         k: _ArrayLikeComplex_co | _ArrayLikeObject_co | None = 0,
     ) -> poly1d: ...
-
-class matrix(ndarray[_2DShapeT_co, _DTypeT_co]):
-    __array_priority__: ClassVar[float] = 10.0  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    def __new__(
-        subtype,  # pyright: ignore[reportSelfClsParameterName]
-        data: ArrayLike,
-        dtype: DTypeLike | None = None,
-        copy: builtins.bool = True,
-    ) -> matrix[_2D, Incomplete]: ...
-    def __array_finalize__(self, obj: object) -> None: ...
-
-    @overload  # type: ignore[override]
-    def __getitem__(
-        self, key: SupportsIndex | _ArrayLikeInt_co | tuple[SupportsIndex | _ArrayLikeInt_co, ...], /
-    ) -> Incomplete: ...
-    @overload
-    def __getitem__(self, key: _ToIndices, /) -> matrix[_2D, _DTypeT_co]: ...
-    @overload
-    def __getitem__(self: matrix[Any, dtype[void]], key: str, /) -> matrix[_2D, dtype]: ...
-    @overload
-    def __getitem__(self: matrix[Any, dtype[void]], key: list[str], /) -> matrix[_2DShapeT_co, _DTypeT_co]: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    #
-    def __mul__(self, other: ArrayLike, /) -> matrix[_2D, Incomplete]: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
-    def __rmul__(self, other: ArrayLike, /) -> matrix[_2D, Incomplete]: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
-    def __imul__(self, other: ArrayLike, /) -> Self: ...
-
-    #
-    def __pow__(self, other: ArrayLike, mod: None = None, /) -> matrix[_2D, Incomplete]: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
-    def __rpow__(self, other: ArrayLike, mod: None = None, /) -> matrix[_2D, Incomplete]: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
-    def __ipow__(self, other: ArrayLike, /) -> Self: ...  # type: ignore[misc, override]
-
-    # keep in sync with `prod` and `mean`
-    @overload  # type: ignore[override]
-    def sum(self, axis: None = None, dtype: DTypeLike | None = None, out: None = None) -> Incomplete: ...
-    @overload
-    def sum(self, axis: _ShapeLike, dtype: DTypeLike | None = None, out: None = None) -> matrix[_2D, Incomplete]: ...
-    @overload
-    def sum(self, axis: _ShapeLike | None, dtype: DTypeLike | None, out: _ArrayT) -> _ArrayT: ...
-    @overload
-    def sum(self, axis: _ShapeLike | None = None, dtype: DTypeLike | None = None, *, out: _ArrayT) -> _ArrayT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    # keep in sync with `sum` and `mean`
-    @overload  # type: ignore[override]
-    def prod(self, axis: None = None, dtype: DTypeLike | None = None, out: None = None) -> Incomplete: ...
-    @overload
-    def prod(self, axis: _ShapeLike, dtype: DTypeLike | None = None, out: None = None) -> matrix[_2D, Incomplete]: ...
-    @overload
-    def prod(self, axis: _ShapeLike | None, dtype: DTypeLike | None, out: _ArrayT) -> _ArrayT: ...
-    @overload
-    def prod(self, axis: _ShapeLike | None = None, dtype: DTypeLike | None = None, *, out: _ArrayT) -> _ArrayT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    # keep in sync with `sum` and `prod`
-    @overload  # type: ignore[override]
-    def mean(self, axis: None = None, dtype: DTypeLike | None = None, out: None = None) -> Incomplete: ...
-    @overload
-    def mean(self, axis: _ShapeLike, dtype: DTypeLike | None = None, out: None = None) -> matrix[_2D, Incomplete]: ...
-    @overload
-    def mean(self, axis: _ShapeLike | None, dtype: DTypeLike | None, out: _ArrayT) -> _ArrayT: ...
-    @overload
-    def mean(self, axis: _ShapeLike | None = None, dtype: DTypeLike | None = None, *, out: _ArrayT) -> _ArrayT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    # keep in sync with `var`
-    @overload  # type: ignore[override]
-    def std(self, axis: None = None, dtype: DTypeLike | None = None, out: None = None, ddof: float = 0) -> Incomplete: ...
-    @overload
-    def std(
-        self, axis: _ShapeLike, dtype: DTypeLike | None = None, out: None = None, ddof: float = 0
-    ) -> matrix[_2D, Incomplete]: ...
-    @overload
-    def std(self, axis: _ShapeLike | None, dtype: DTypeLike | None, out: _ArrayT, ddof: float = 0) -> _ArrayT: ...
-    @overload
-    def std(  # pyright: ignore[reportIncompatibleMethodOverride]
-        self, axis: _ShapeLike | None = None, dtype: DTypeLike | None = None, *, out: _ArrayT, ddof: float = 0
-    ) -> _ArrayT: ...
-
-    # keep in sync with `std`
-    @overload  # type: ignore[override]
-    def var(self, axis: None = None, dtype: DTypeLike | None = None, out: None = None, ddof: float = 0) -> Incomplete: ...
-    @overload
-    def var(
-        self, axis: _ShapeLike, dtype: DTypeLike | None = None, out: None = None, ddof: float = 0
-    ) -> matrix[_2D, Incomplete]: ...
-    @overload
-    def var(self, axis: _ShapeLike | None, dtype: DTypeLike | None, out: _ArrayT, ddof: float = 0) -> _ArrayT: ...
-    @overload
-    def var(  # pyright: ignore[reportIncompatibleMethodOverride]
-        self, axis: _ShapeLike | None = None, dtype: DTypeLike | None = None, *, out: _ArrayT, ddof: float = 0
-    ) -> _ArrayT: ...
-
-    # keep in sync with `all`
-    @overload  # type: ignore[override]
-    def any(self, axis: None = None, out: None = None) -> np.bool: ...
-    @overload
-    def any(self, axis: _ShapeLike, out: None = None) -> matrix[_2D, dtype[np.bool]]: ...
-    @overload
-    def any(self, axis: _ShapeLike | None, out: _ArrayT) -> _ArrayT: ...
-    @overload
-    def any(self, axis: _ShapeLike | None = None, *, out: _ArrayT) -> _ArrayT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    # keep in sync with `any`
-    @overload  # type: ignore[override]
-    def all(self, axis: None = None, out: None = None) -> np.bool: ...
-    @overload
-    def all(self, axis: _ShapeLike, out: None = None) -> matrix[_2D, dtype[np.bool]]: ...
-    @overload
-    def all(self, axis: _ShapeLike | None, out: _ArrayT) -> _ArrayT: ...
-    @overload
-    def all(self, axis: _ShapeLike | None = None, *, out: _ArrayT) -> _ArrayT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    # keep in sync with `min` and `ptp`
-    @overload  # type: ignore[override]
-    def max(self: NDArray[_ScalarT], axis: None = None, out: None = None) -> _ScalarT: ...
-    @overload
-    def max(self, axis: _ShapeLike, out: None = None) -> matrix[_2D, _DTypeT_co]: ...
-    @overload
-    def max(self, axis: _ShapeLike | None, out: _ArrayT) -> _ArrayT: ...
-    @overload
-    def max(self, axis: _ShapeLike | None = None, *, out: _ArrayT) -> _ArrayT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    # keep in sync with `max` and `ptp`
-    @overload  # type: ignore[override]
-    def min(self: NDArray[_ScalarT], axis: None = None, out: None = None) -> _ScalarT: ...
-    @overload
-    def min(self, axis: _ShapeLike, out: None = None) -> matrix[_2D, _DTypeT_co]: ...
-    @overload
-    def min(self, axis: _ShapeLike | None, out: _ArrayT) -> _ArrayT: ...
-    @overload
-    def min(self, axis: _ShapeLike | None = None, *, out: _ArrayT) -> _ArrayT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    # keep in sync with `max` and `min`
-    @overload
-    def ptp(self: NDArray[_ScalarT], axis: None = None, out: None = None) -> _ScalarT: ...
-    @overload
-    def ptp(self, axis: _ShapeLike, out: None = None) -> matrix[_2D, _DTypeT_co]: ...
-    @overload
-    def ptp(self, axis: _ShapeLike | None, out: _ArrayT) -> _ArrayT: ...
-    @overload
-    def ptp(self, axis: _ShapeLike | None = None, *, out: _ArrayT) -> _ArrayT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    # keep in sync with `argmin`
-    @overload  # type: ignore[override]
-    def argmax(self: NDArray[_ScalarT], axis: None = None, out: None = None) -> intp: ...
-    @overload
-    def argmax(self, axis: _ShapeLike, out: None = None) -> matrix[_2D, dtype[intp]]: ...
-    @overload
-    def argmax(self, axis: _ShapeLike | None, out: _BoolOrIntArrayT) -> _BoolOrIntArrayT: ...
-    @overload
-    def argmax(self, axis: _ShapeLike | None = None, *, out: _BoolOrIntArrayT) -> _BoolOrIntArrayT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    # keep in sync with `argmax`
-    @overload  # type: ignore[override]
-    def argmin(self: NDArray[_ScalarT], axis: None = None, out: None = None) -> intp: ...
-    @overload
-    def argmin(self, axis: _ShapeLike, out: None = None) -> matrix[_2D, dtype[intp]]: ...
-    @overload
-    def argmin(self, axis: _ShapeLike | None, out: _BoolOrIntArrayT) -> _BoolOrIntArrayT: ...
-    @overload
-    def argmin(self, axis: _ShapeLike | None = None, *, out: _BoolOrIntArrayT) -> _BoolOrIntArrayT: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    #the second overload handles the (rare) case that the matrix is not 2-d
-    @overload
-    def tolist(self: matrix[_2D, dtype[generic[_T]]]) -> list[list[_T]]: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-    @overload
-    def tolist(self) -> Incomplete: ...  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    # these three methods will at least return a `2-d` array of shape (1, n)
-    def squeeze(self, axis: _ShapeLike | None = None) -> matrix[_2D, _DTypeT_co]: ...
-    def ravel(self, /, order: _OrderKACF = "C") -> matrix[_2D, _DTypeT_co]: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
-    def flatten(self, /, order: _OrderKACF = "C") -> matrix[_2D, _DTypeT_co]: ...  # type: ignore[override]  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    # matrix.T is inherited from _ScalarOrArrayCommon
-    def getT(self) -> Self: ...
-    @property
-    def I(self) -> matrix[_2D, Incomplete]: ...  # noqa: E743
-    def getI(self) -> matrix[_2D, Incomplete]: ...
-    @property
-    def A(self) -> ndarray[_2DShapeT_co, _DTypeT_co]: ...
-    def getA(self) -> ndarray[_2DShapeT_co, _DTypeT_co]: ...
-    @property
-    def A1(self) -> ndarray[_AnyShape, _DTypeT_co]: ...
-    def getA1(self) -> ndarray[_AnyShape, _DTypeT_co]: ...
-    @property
-    def H(self) -> matrix[_2D, _DTypeT_co]: ...
-    def getH(self) -> matrix[_2D, _DTypeT_co]: ...
 
 def from_dlpack(
     x: _SupportsDLPack[None],

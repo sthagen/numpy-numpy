@@ -14,7 +14,7 @@ from typing import (
     overload,
     type_check_only,
 )
-from typing_extensions import TypeIs, deprecated
+from typing_extensions import TypeIs
 
 import numpy as np
 from numpy import (
@@ -87,7 +87,6 @@ __all__ = [
     "blackman",
     "kaiser",
     "trapezoid",
-    "trapz",
     "i0",
     "meshgrid",
     "delete",
@@ -480,8 +479,6 @@ def corrcoef(
     x: _ArrayLikeFloat_co,
     y: _ArrayLikeFloat_co | None = None,
     rowvar: bool = True,
-    bias: _NoValueType = ...,
-    ddof: _NoValueType = ...,
     *,
     dtype: None = None,
 ) -> NDArray[floating]: ...
@@ -490,8 +487,6 @@ def corrcoef(
     x: _ArrayLikeComplex_co,
     y: _ArrayLikeComplex_co | None = None,
     rowvar: bool = True,
-    bias: _NoValueType = ...,
-    ddof: _NoValueType = ...,
     *,
     dtype: None = None,
 ) -> NDArray[complexfloating]: ...
@@ -500,8 +495,6 @@ def corrcoef(
     x: _ArrayLikeComplex_co,
     y: _ArrayLikeComplex_co | None = None,
     rowvar: bool = True,
-    bias: _NoValueType = ...,
-    ddof: _NoValueType = ...,
     *,
     dtype: _DTypeLike[_ScalarT],
 ) -> NDArray[_ScalarT]: ...
@@ -510,8 +503,6 @@ def corrcoef(
     x: _ArrayLikeComplex_co,
     y: _ArrayLikeComplex_co | None = None,
     rowvar: bool = True,
-    bias: _NoValueType = ...,
-    ddof: _NoValueType = ...,
     *,
     dtype: DTypeLike | None = None,
 ) -> NDArray[Any]: ...
@@ -990,10 +981,6 @@ def trapezoid(
     floating | complexfloating | timedelta64
     | NDArray[floating | complexfloating | timedelta64 | object_]
 ): ...
-
-@deprecated("Use 'trapezoid' instead")
-def trapz(y: ArrayLike, x: ArrayLike | None = None, dx: float = 1.0, axis: int = -1) -> generic | NDArray[generic]: ...
-
 @overload
 def meshgrid(
     *,

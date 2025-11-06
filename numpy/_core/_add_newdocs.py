@@ -570,6 +570,18 @@ add_newdoc('numpy._core', 'nditer', ('close',
 
 add_newdoc('numpy._core', 'nested_iters',
     """
+    nested_iters(
+        op,
+        axes,
+        flags=None,
+        op_flags=None,
+        op_dtypes=None,
+        order='K',
+        casting='safe',
+        buffersize=0,
+    )
+    --
+
     nested_iters(op, axes, flags=None, op_flags=None, op_dtypes=None,
     order='K', casting='safe', buffersize=0)
 
@@ -855,8 +867,21 @@ add_newdoc('numpy._core', 'broadcast', ('reset',
 
 add_newdoc('numpy._core.multiarray', 'array',
     """
+    array(
+        object,
+        dtype=None,
+        *,
+        copy=True,
+        order='K',
+        subok=False,
+        ndmin=0,
+        ndmax=0,
+        like=None,
+    )
+    --
+
     array(object, dtype=None, *, copy=True, order='K', subok=False, ndmin=0,
-          ndmax=None, like=None)
+          ndmax=0, like=None)
 
     Create an array.
 
@@ -907,8 +932,9 @@ add_newdoc('numpy._core.multiarray', 'array',
         needed to meet this requirement.
     ndmax : int, optional
         Specifies the maximum number of dimensions to create when inferring
-        shape from nested sequences. By default, NumPy recurses through all
-        nesting levels (up to the compile-time constant ``NPY_MAXDIMS``).
+        shape from nested sequences. By default (ndmax=0), NumPy recurses
+        through all nesting levels (up to the compile-time constant
+        ``NPY_MAXDIMS``).
         Setting ``ndmax`` stops recursion at the specified depth, preserving
         deeper nested structures as objects instead of promoting them to
         higher-dimensional arrays. In this case, ``dtype=object`` is required.
@@ -933,7 +959,7 @@ add_newdoc('numpy._core.multiarray', 'array',
     ones : Return a new array setting values to one.
     zeros : Return a new array setting values to zero.
     full : Return a new array of given shape filled with value.
-    copy: Return an array copy of the given object.
+    copy : Return an array copy of the given object.
 
 
     Notes
@@ -1005,6 +1031,9 @@ add_newdoc('numpy._core.multiarray', 'array',
 add_newdoc('numpy._core.multiarray', 'asarray',
     """
     asarray(a, dtype=None, order=None, *, device=None, copy=None, like=None)
+    --
+
+    asarray(a, dtype=None, order=None, *, device=None, copy=None, like=None)
 
     Convert the input to an array.
 
@@ -1053,12 +1082,10 @@ add_newdoc('numpy._core.multiarray', 'asarray',
     --------
     asanyarray : Similar function which passes through subclasses.
     ascontiguousarray : Convert input to a contiguous array.
-    asfortranarray : Convert input to an ndarray with column-major
-                     memory order.
+    asfortranarray : Convert input to an ndarray with column-major memory order.
     asarray_chkfinite : Similar function which checks input for NaNs and Infs.
     fromiter : Create an array from an iterator.
-    fromfunction : Construct an array by executing a function on grid
-                   positions.
+    fromfunction : Construct an array by executing a function on grid positions.
 
     Examples
     --------
@@ -1097,6 +1124,9 @@ add_newdoc('numpy._core.multiarray', 'asarray',
 
 add_newdoc('numpy._core.multiarray', 'asanyarray',
     """
+    asanyarray(a, dtype=None, order=None, *, device=None, copy=None, like=None)
+    --
+
     asanyarray(a, dtype=None, order=None, *, device=None, copy=None, like=None)
 
     Convert the input to an ndarray, but pass ndarray subclasses through.
@@ -1148,13 +1178,10 @@ add_newdoc('numpy._core.multiarray', 'asanyarray',
     --------
     asarray : Similar function which always returns ndarrays.
     ascontiguousarray : Convert input to a contiguous array.
-    asfortranarray : Convert input to an ndarray with column-major
-                     memory order.
-    asarray_chkfinite : Similar function which checks input for NaNs and
-                        Infs.
+    asfortranarray : Convert input to an ndarray with column-major memory order.
+    asarray_chkfinite : Similar function which checks input for NaNs and Infs.
     fromiter : Create an array from an iterator.
-    fromfunction : Construct an array by executing a function on grid
-                   positions.
+    fromfunction : Construct an array by executing a function on grid positions.
 
     Examples
     --------
@@ -1175,6 +1202,9 @@ add_newdoc('numpy._core.multiarray', 'asanyarray',
 
 add_newdoc('numpy._core.multiarray', 'ascontiguousarray',
     """
+    ascontiguousarray(a, dtype=None, *, like=None)
+    --
+
     ascontiguousarray(a, dtype=None, *, like=None)
 
     Return a contiguous array (ndim >= 1) in memory (C order).
@@ -1197,8 +1227,7 @@ add_newdoc('numpy._core.multiarray', 'ascontiguousarray',
 
     See Also
     --------
-    asfortranarray : Convert input to an ndarray with column-major
-                     memory order.
+    asfortranarray : Convert input to an ndarray with column-major memory order.
     require : Return an ndarray that satisfies requirements.
     ndarray.flags : Information about the memory layout of the array.
 
@@ -1238,6 +1267,9 @@ add_newdoc('numpy._core.multiarray', 'ascontiguousarray',
 
 add_newdoc('numpy._core.multiarray', 'asfortranarray',
     """
+    asfortranarray(a, dtype=None, *, like=None)
+    --
+
     asfortranarray(a, dtype=None, *, like=None)
 
     Return an array (ndim >= 1) laid out in Fortran order in memory.
@@ -1450,6 +1482,9 @@ add_newdoc('numpy._core.multiarray', 'set_typeDict',
 
 add_newdoc('numpy._core.multiarray', 'fromstring',
     """
+    fromstring(string, dtype=None, count=-1, *, sep, like=None)
+    --
+
     fromstring(string, dtype=float, count=-1, *, sep, like=None)
 
     A new 1-D array initialized from text data in a string.
@@ -1459,7 +1494,7 @@ add_newdoc('numpy._core.multiarray', 'fromstring',
     string : str
         A string containing the data.
     dtype : data-type, optional
-        The data type of the array; default: float.  For binary input data,
+        The data type of the array; default: `numpy.float64`.  For binary input data,
         the data must be in exactly this format. Most builtin numeric types are
         supported and extension types may be supported.
     count : int, optional
@@ -1511,6 +1546,9 @@ add_newdoc('numpy._core.multiarray', 'fromstring',
 add_newdoc('numpy._core.multiarray', 'compare_chararrays',
     """
     compare_chararrays(a1, a2, cmp, rstrip)
+    --
+
+    compare_chararrays(a1, a2, cmp, rstrip)
 
     Performs element-wise comparison of two string arrays using the
     comparison operator specified by `cmp`.
@@ -1521,20 +1559,20 @@ add_newdoc('numpy._core.multiarray', 'compare_chararrays',
         Arrays to be compared.
     cmp : {"<", "<=", "==", ">=", ">", "!="}
         Type of comparison.
-    rstrip : Boolean
-        If True, the spaces at the end of Strings are removed before the comparison.
+    rstrip : bool
+        If True, the spaces at the end of strings are removed before the comparison.
 
     Returns
     -------
     out : ndarray
-        The output array of type Boolean with the same shape as a and b.
+        The output array of type `numpy.bool` with the same shape as `a1` and `a2`.
 
     Raises
     ------
     ValueError
         If `cmp` is not valid.
     TypeError
-        If at least one of `a` or `b` is a non-string array
+        If at least one of `a1` or `a2` is a non-string array
 
     Examples
     --------
@@ -1548,6 +1586,9 @@ add_newdoc('numpy._core.multiarray', 'compare_chararrays',
 
 add_newdoc('numpy._core.multiarray', 'fromiter',
     """
+    fromiter(iter, dtype, count=-1, *, like=None)
+    --
+
     fromiter(iter, dtype, count=-1, *, like=None)
 
     Create a new 1-dimensional array from an iterable object.
@@ -1603,6 +1644,9 @@ add_newdoc('numpy._core.multiarray', 'fromiter',
 
 add_newdoc('numpy._core.multiarray', 'fromfile',
     """
+    fromfile(file, dtype=None, count=-1, sep='', offset=0, *, like=None)
+    --
+
     fromfile(file, dtype=float, count=-1, sep='', offset=0, *, like=None)
 
     Construct an array from data in a text or binary file.
@@ -1688,6 +1732,9 @@ add_newdoc('numpy._core.multiarray', 'fromfile',
 
 add_newdoc('numpy._core.multiarray', 'frombuffer',
     """
+    frombuffer(buffer, dtype=None, count=-1, offset=0, *, like=None)
+    --
+
     frombuffer(buffer, dtype=float, count=-1, offset=0, *, like=None)
 
     Interpret a buffer as a 1-dimensional array.
@@ -1697,7 +1744,7 @@ add_newdoc('numpy._core.multiarray', 'frombuffer',
     buffer : buffer_like
         An object that exposes the buffer interface.
     dtype : data-type, optional
-        Data-type of the returned array; default: float.
+        Data-type of the returned array.  Default is `numpy.float64`.
     count : int, optional
         Number of items to read. ``-1`` means all data in the buffer.
     offset : int, optional
@@ -1749,6 +1796,9 @@ add_newdoc('numpy._core.multiarray', 'frombuffer',
 add_newdoc('numpy._core.multiarray', 'from_dlpack',
     """
     from_dlpack(x, /, *, device=None, copy=None)
+    --
+
+    from_dlpack(x, /, *, device=None, copy=None)
 
     Create a NumPy array from an object implementing the ``__dlpack__``
     protocol. Generally, the returned NumPy array is a view of the input
@@ -1798,6 +1848,9 @@ add_newdoc('numpy._core.multiarray', 'correlate',
 
 add_newdoc('numpy._core.multiarray', 'arange',
     """
+    arange(start_or_stop, /, stop=None, step=1, *, dtype=None, device=None, like=None)
+    --
+
     arange([start,] stop[, step,], dtype=None, *, device=None, like=None)
 
     Return evenly spaced values within a given interval.
@@ -1922,13 +1975,16 @@ add_newdoc('numpy._core.multiarray', '_get_ndarray_c_version',
 add_newdoc('numpy._core.multiarray', '_reconstruct',
     """_reconstruct(subtype, shape, dtype)
 
-    Construct an empty array. Used by Pickles.
+    Construct an empty array. Used by Pickle.
 
     """)
 
 add_newdoc('numpy._core.multiarray', 'promote_types',
     """
-    promote_types(type1, type2)
+    promote_types(type1, type2, /)
+    --
+
+    promote_types(type1, type2, /)
 
     Returns the data type with the smallest size and smallest scalar
     kind to which both ``type1`` and ``type2`` may be safely cast.
@@ -2315,8 +2371,10 @@ add_newdoc('numpy._core.multiarray', 'c_einsum',
 
 add_newdoc('numpy._core.multiarray', 'ndarray',
     """
-    ndarray(shape, dtype=float, buffer=None, offset=0,
-            strides=None, order=None)
+    ndarray(shape, dtype=None, buffer=None, offset=0, strides=None, order=None)
+    --
+
+    ndarray(shape, dtype=float, buffer=None, offset=0, strides=None, order=None)
 
     An array object represents a multidimensional, homogeneous array
     of fixed-size items.  An associated data-type object describes the
@@ -2339,6 +2397,7 @@ add_newdoc('numpy._core.multiarray', 'ndarray',
         Shape of created array.
     dtype : data-type, optional
         Any object that can be interpreted as a numpy data type.
+        Default is `numpy.float64`.
     buffer : object exposing buffer interface, optional
         Used to fill the array with data.
     offset : int, optional
@@ -2456,21 +2515,6 @@ add_newdoc('numpy._core.multiarray', 'ndarray', ('__array_priority__',
 add_newdoc('numpy._core.multiarray', 'ndarray', ('__array_struct__',
     """Array protocol: C-struct side."""))
 
-add_newdoc('numpy._core.multiarray', 'ndarray', ('__dlpack__',
-    """
-    a.__dlpack__(*, stream=None, max_version=None, dl_device=None, copy=None)
-
-    DLPack Protocol: Part of the Array API.
-
-    """))
-
-add_newdoc('numpy._core.multiarray', 'ndarray', ('__dlpack_device__',
-    """
-    a.__dlpack_device__()
-
-    DLPack Protocol: Part of the Array API.
-
-    """))
 
 add_newdoc('numpy._core.multiarray', 'ndarray', ('base',
     """
@@ -3084,6 +3128,42 @@ add_newdoc('numpy._core.multiarray', 'ndarray', ('__array_finalize__',
     """))
 
 
+add_newdoc('numpy._core.multiarray', 'ndarray', ('__array_function__',
+    """
+    __array_function__($self, /, func, types, args, kwargs)
+    --
+
+    a.__array_function__(func, types, args, kwargs)
+
+    See :ref:`NEP 18 <NEP18>` and :ref:`NEP 35 <NEP35>` for details.
+
+    """))
+
+
+add_newdoc('numpy._core.multiarray', 'ndarray', ('__array_namespace__',
+    """
+    __array_namespace__($self, /, *, api_version=None)
+    --
+
+    a.__array_namespace__(*, api_version=None)
+
+    For Array API compatibility.
+
+    """))
+
+
+add_newdoc('numpy._core.multiarray', 'ndarray', ('__array_ufunc__',
+    """
+    __array_ufunc__($self, ufunc, method, /, *inputs, **kwargs)
+    --
+
+    a.__array_ufunc__(ufunc, method, /, *inputs, **kwargs)
+
+    See :ref:`NEP 13 <NEP13>` for details.
+
+    """))
+
+
 add_newdoc('numpy._core.multiarray', 'ndarray', ('__array_wrap__',
     """
     __array_wrap__($self, array, context=None, return_scalar=True, /)
@@ -3092,6 +3172,38 @@ add_newdoc('numpy._core.multiarray', 'ndarray', ('__array_wrap__',
     a.__array_wrap__(array[, context[, return_scalar]], /)
 
     Returns a view of `array` with the same type as self.
+
+    """))
+
+
+add_newdoc('numpy._core.multiarray', 'ndarray', ('__class_getitem__',
+    """
+    __class_getitem__($cls, item, /)
+    --
+
+    ndarray[shape, dtype]
+
+    Return a parametrized wrapper around the `~numpy.ndarray` type.
+
+    .. versionadded:: 1.22
+
+    Returns
+    -------
+    alias : types.GenericAlias
+        A parametrized `~numpy.ndarray` type.
+
+    Examples
+    --------
+    >>> import numpy as np
+
+    >>> np.ndarray[tuple[int], np.dtype[np.uint8]]
+    numpy.ndarray[tuple[int], numpy.dtype[numpy.uint8]]
+
+    See Also
+    --------
+    :pep:`585` : Type hinting generics in standard collections.
+    numpy.typing.NDArray : An ndarray alias :term:`generic <generic type>`
+                        w.r.t. its `dtype.type <numpy.dtype.type>`.
 
     """))
 
@@ -3110,39 +3222,6 @@ add_newdoc('numpy._core.multiarray', 'ndarray', ('__copy__',
     """))
 
 
-add_newdoc('numpy._core.multiarray', 'ndarray', ('__class_getitem__',
-    """
-    __class_getitem__($cls, item, /)
-    --
-
-    a.__class_getitem__(item, /)
-
-    Return a parametrized wrapper around the `~numpy.ndarray` type.
-
-    .. versionadded:: 1.22
-
-    Returns
-    -------
-    alias : types.GenericAlias
-        A parametrized `~numpy.ndarray` type.
-
-    Examples
-    --------
-    >>> from typing import Any
-    >>> import numpy as np
-
-    >>> np.ndarray[Any, np.dtype[np.uint8]]
-    numpy.ndarray[typing.Any, numpy.dtype[numpy.uint8]]
-
-    See Also
-    --------
-    :pep:`585` : Type hinting generics in standard collections.
-    numpy.typing.NDArray : An ndarray alias :term:`generic <generic type>`
-                        w.r.t. its `dtype.type <numpy.dtype.type>`.
-
-    """))
-
-
 add_newdoc('numpy._core.multiarray', 'ndarray', ('__deepcopy__',
     """
     __deepcopy__($self, memo, /)
@@ -3155,12 +3234,49 @@ add_newdoc('numpy._core.multiarray', 'ndarray', ('__deepcopy__',
     """))
 
 
+add_newdoc('numpy._core.multiarray', 'ndarray', ('__dlpack__',
+    """
+    __dlpack__($self, /, *, stream=None, max_version=None, dl_device=None, copy=None)
+    --
+
+    a.__dlpack__(*, stream=None, max_version=None, dl_device=None, copy=None)
+
+    Exports the array for consumption by ``from_dlpack()`` as a DLPack capsule.
+
+    """))
+
+
+add_newdoc('numpy._core.multiarray', 'ndarray', ('__dlpack_device__',
+    """
+    __dlpack_device__($self, /)
+    --
+
+    a.__dlpack_device__()
+
+    Returns device type (``1``) and device ID (``0``) in DLPack format.
+    Meant for use within ``from_dlpack()``.
+
+    """))
+
+
 add_newdoc('numpy._core.multiarray', 'ndarray', ('__reduce__',
     """
     __reduce__($self, /)
     --
 
     a.__reduce__()
+
+    For pickling.
+
+    """))
+
+
+add_newdoc('numpy._core.multiarray', 'ndarray', ('__reduce_ex__',
+    """
+    __reduce_ex__($self, protocol, /)
+    --
+
+    a.__reduce_ex__(protocol, /)
 
     For pickling.
 
@@ -4576,6 +4692,31 @@ add_newdoc('numpy._core.multiarray', 'ndarray', ('take',
     """))
 
 
+add_newdoc('numpy._core.multiarray', 'ndarray', ('to_device',
+    """
+    to_device($self, device, /, *, stream=None)
+    --
+
+    a.to_device(device, /, *, stream=None)
+
+    For Array API compatibility.  Since NumPy only supports CPU arrays, this
+    method is a no-op that returns the same array.
+
+    Parameters
+    ----------
+    device : "cpu"
+        Must be ``"cpu"``.
+    stream : None, optional
+        Currently unsupported.
+
+    Returns
+    -------
+    out : Self
+        Returns the same array.
+
+    """))
+
+
 add_newdoc('numpy._core.multiarray', 'ndarray', ('tofile',
     """
     tofile($self, fid, /, sep='', format='%s')
@@ -4960,6 +5101,9 @@ add_newdoc('numpy._core.multiarray', 'ndarray', ('view',
 
 add_newdoc('numpy._core.umath', 'frompyfunc',
     """
+    frompyfunc(func, /, nin, nout, **kwargs)
+    --
+
     frompyfunc(func, /, nin, nout, *[, identity])
 
     Takes an arbitrary Python function and returns a NumPy ufunc.
@@ -6771,6 +6915,9 @@ add_newdoc('numpy._core.multiarray', 'dtype', ('__lt__',
 add_newdoc('numpy._core.multiarray', 'busdaycalendar',
     """
     busdaycalendar(weekmask='1111100', holidays=None)
+    --
+
+    busdaycalendar(weekmask='1111100', holidays=None)
 
     A business day calendar object that efficiently stores information
     defining valid days for the busday family of functions.
@@ -6893,6 +7040,9 @@ add_newdoc('numpy._core.multiarray', 'normalize_axis_index',
 
 add_newdoc('numpy._core.multiarray', 'datetime_data',
     """
+    datetime_data(dtype, /)
+    --
+
     datetime_data(dtype, /)
 
     Get information about the step size of a date or time type.

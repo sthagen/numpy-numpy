@@ -1687,7 +1687,7 @@ def assert_allclose(actual, desired, rtol=1e-7, atol=0, equal_nan=True,
         Array desired.
     rtol : float, optional
         Relative tolerance.
-    atol : float, optional
+    atol : float | np.timedelta64, optional
         Absolute tolerance.
     equal_nan : bool, optional.
         If True, NaNs will compare equal.
@@ -1766,7 +1766,11 @@ def assert_allclose(actual, desired, rtol=1e-7, atol=0, equal_nan=True,
                                        equal_nan=equal_nan)
 
     actual, desired = np.asanyarray(actual), np.asanyarray(desired)
-    header = f'Not equal to tolerance rtol={rtol:g}, atol={atol:g}'
+    if isinstance(atol, np.timedelta64):
+        atol_str = str(atol)
+    else:
+        atol_str = f"{atol:g}"
+    header = f'Not equal to tolerance rtol={rtol:g}, atol={atol_str}'
     assert_array_compare(compare, actual, desired, err_msg=str(err_msg),
                          verbose=verbose, header=header, equal_nan=equal_nan,
                          strict=strict)
@@ -2830,3 +2834,30 @@ def run_threaded(func, max_workers=8, pass_count=False,
                     barrier.abort()
             for f in futures:
                 f.result()
+
+
+def requires_deep_recursion(func):
+    """Decorator to skip test if deep recursion is not supported."""
+    import pytest
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        if IS_PYSTON:
+            pytest.skip("Pyston disables recursion checking")
+        if IS_WASM:
+            pytest.skip("WASM has limited stack size")
+        cflags = sysconfig.get_config_var('CFLAGS') or ''
+        config_args = sysconfig.get_config_var('CONFIG_ARGS') or ''
+        address_sanitizer = (
+            '-fsanitize=address' in cflags or
+            '--with-address-sanitizer' in config_args
+        )
+        thread_sanitizer = (
+            '-fsanitize=thread' in cflags or
+            '--with-thread-sanitizer' in config_args
+        )
+        if address_sanitizer or thread_sanitizer:
+            pytest.skip("AddressSanitizer and ThreadSanitizer do not support "
+                        "deep recursion")
+        return func(*args, **kwargs)
+    return wrapper

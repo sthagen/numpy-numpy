@@ -39,6 +39,8 @@ numpy\.(\w+\.)*integer\.bit_count
 numpy\.(\w+\.)*floating\.as_integer_ratio
 numpy\.(\w+\.)*floating\.is_integer
 numpy\.(\w+\.)*complexfloating\.__complex__
+# https://github.com/numpy/numpy/issues/30445#issuecomment-3665484402
+numpy\.(\w+\.)*generic\.__hash__
 
 # intentionally missing deprecated module stubs
 numpy\.core\._dtype
@@ -58,6 +60,11 @@ numpy\.core\.records.*
 numpy\.core\.shape_base.*
 numpy\.core\.umath.*
 numpy\.typing\.mypy_plugin
+
+# false positive "... is not a Union" errors
+numpy\.typing\.ArrayLike
+numpy\.typing\.DTypeLike
+numpy\.typing\.NDArray
 
 # ufuncs, see https://github.com/python/mypy/issues/20223
 numpy\.(\w+\.)*abs

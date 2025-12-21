@@ -18,6 +18,7 @@ on:
       - '**.pyi'
       - '**.md'
       - '**.rst'
+      - 'tools/stubtest/**'
 
 defaults:
   run:
@@ -269,6 +270,7 @@ jobs:
       run: |
         sudo apt update
         sudo apt install make swig
+        pip install setuptools
         make -C tools/swig/test test
 
   array_api_tests:

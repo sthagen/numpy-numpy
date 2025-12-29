@@ -594,7 +594,7 @@ def average(a, axis=None, weights=None, returned=False, *,
 
     if returned:
         if scl.shape != avg_as_array.shape:
-            scl = np.broadcast_to(scl, avg_as_array.shape).copy()
+            scl = np.broadcast_to(scl, avg_as_array.shape, subok=True).copy()
         return avg, scl
     else:
         return avg
@@ -823,7 +823,7 @@ def select(condlist, choicelist, default=0):
     choicelist : list of ndarrays
         The list of arrays from which the output elements are taken. It has
         to be of the same length as `condlist`.
-    default : scalar, optional
+    default : array_like, optional
         The element inserted in `output` when all conditions evaluate to False.
 
     Returns

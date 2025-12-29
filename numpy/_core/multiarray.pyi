@@ -1,4 +1,3 @@
-# TODO: Sort out any and all missing functions in this namespace
 import datetime as dt
 from _typeshed import Incomplete, StrOrBytesPath, SupportsLenAndGetItem
 from collections.abc import Buffer, Callable, Iterable, Sequence
@@ -213,146 +212,12 @@ type _ArangeScalar = np.integer | np.floating | np.datetime64 | np.timedelta64
 type _ToDates = dt.date | _NestedSequence[dt.date]
 type _ToDeltas = dt.timedelta | _NestedSequence[dt.timedelta]
 
+type _BitOrder = L["big", "little"]
+type _MaxWork = L[-1, 0]
+
 @type_check_only
 class _SupportsArray[ArrayT_co: np.ndarray](Protocol):
     def __array__(self, /) -> ArrayT_co: ...
-
-@type_check_only
-class _ConstructorEmpty(Protocol):
-    # 1-D shape
-    @overload
-    def __call__(
-        self,
-        /,
-        shape: SupportsIndex,
-        dtype: None = None,
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> _Array1D[float64]: ...
-    @overload
-    def __call__[DTypeT: np.dtype](
-        self,
-        /,
-        shape: SupportsIndex,
-        dtype: DTypeT | _SupportsDType[DTypeT],
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> ndarray[tuple[int], DTypeT]: ...
-    @overload
-    def __call__[ScalarT: np.generic](
-        self,
-        /,
-        shape: SupportsIndex,
-        dtype: type[ScalarT],
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> _Array1D[ScalarT]: ...
-    @overload
-    def __call__(
-        self,
-        /,
-        shape: SupportsIndex,
-        dtype: DTypeLike | None = None,
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> _Array1D[Incomplete]: ...
-
-    # known shape
-    @overload
-    def __call__[ShapeT: _Shape](
-        self,
-        /,
-        shape: ShapeT,
-        dtype: None = None,
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> _Array[ShapeT, float64]: ...
-    @overload
-    def __call__[ShapeT: _Shape, DTypeT: np.dtype](
-        self,
-        /,
-        shape: ShapeT,
-        dtype: DTypeT | _SupportsDType[DTypeT],
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> ndarray[ShapeT, DTypeT]: ...
-    @overload
-    def __call__[ShapeT: _Shape, ScalarT: np.generic](
-        self,
-        /,
-        shape: ShapeT,
-        dtype: type[ScalarT],
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> _Array[ShapeT, ScalarT]: ...
-    @overload
-    def __call__[ShapeT: _Shape](
-        self,
-        /,
-        shape: ShapeT,
-        dtype: DTypeLike | None = None,
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> _Array[ShapeT, Incomplete]: ...
-
-    # unknown shape
-    @overload
-    def __call__(
-        self, /,
-        shape: _ShapeLike,
-        dtype: None = None,
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> NDArray[float64]: ...
-    @overload
-    def __call__[DTypeT: np.dtype](
-        self, /,
-        shape: _ShapeLike,
-        dtype: DTypeT | _SupportsDType[DTypeT],
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> ndarray[_AnyShape, DTypeT]: ...
-    @overload
-    def __call__[ScalarT: np.generic](
-        self, /,
-        shape: _ShapeLike,
-        dtype: type[ScalarT],
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> NDArray[ScalarT]: ...
-    @overload
-    def __call__(
-        self,
-        /,
-        shape: _ShapeLike,
-        dtype: DTypeLike | None = None,
-        order: _OrderCF = "C",
-        *,
-        device: L["cpu"] | None = None,
-        like: _SupportsArrayFunc | None = None,
-    ) -> NDArray[Incomplete]: ...
 
 # using `Final` or `TypeAlias` will break stubtest
 error = Exception
@@ -397,9 +262,227 @@ MAY_SHARE_BOUNDS: Final = 0
 MAY_SHARE_EXACT: Final = -1
 tracemalloc_domain: Final = 389_047
 
-zeros: Final[_ConstructorEmpty] = ...
-empty: Final[_ConstructorEmpty] = ...
+# keep in sync with zeros (below) and ones (`_core/numeric.pyi`)
+@overload  # 1d, float64 default
+def empty(
+    shape: SupportsIndex,
+    dtype: None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[np.float64]: ...
+@overload  # 1d, specific dtype
+def empty[DTypeT: np.dtype](
+    shape: SupportsIndex,
+    dtype: DTypeT | _SupportsDType[DTypeT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> ndarray[tuple[int], DTypeT]: ...
+@overload  # 1d, specific scalar type
+def empty[ScalarT: np.generic](
+    shape: SupportsIndex,
+    dtype: type[ScalarT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[ScalarT]: ...
+@overload  # 1d, unknown dtype
+def empty(
+    shape: SupportsIndex,
+    dtype: DTypeLike | None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[Incomplete]: ...
+@overload  # known shape, float64 default
+def empty[ShapeT: _Shape](
+    shape: ShapeT,
+    dtype: None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array[ShapeT, float64]: ...
+@overload  # known shape, specific dtype
+def empty[ShapeT: _Shape, DTypeT: np.dtype](
+    shape: ShapeT,
+    dtype: DTypeT | _SupportsDType[DTypeT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> ndarray[ShapeT, DTypeT]: ...
+@overload  # known shape, specific scalar type
+def empty[ShapeT: _Shape, ScalarT: np.generic](
+    shape: ShapeT,
+    dtype: type[ScalarT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array[ShapeT, ScalarT]: ...
+@overload  # known shape, unknown dtype
+def empty[ShapeT: _Shape](
+    shape: ShapeT,
+    dtype: DTypeLike | None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array[ShapeT, Incomplete]: ...
+@overload  # unknown shape, float64 default
+def empty(
+    shape: _ShapeLike,
+    dtype: None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> NDArray[float64]: ...
+@overload  # unknown shape, specific dtype
+def empty[DTypeT: np.dtype](
+    shape: _ShapeLike,
+    dtype: DTypeT | _SupportsDType[DTypeT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> ndarray[_AnyShape, DTypeT]: ...
+@overload  # unknown shape, specific scalar type
+def empty[ScalarT: np.generic](
+    shape: _ShapeLike,
+    dtype: type[ScalarT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> NDArray[ScalarT]: ...
+@overload  # unknown shape, unknown dtype
+def empty(
+    shape: _ShapeLike,
+    dtype: DTypeLike | None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> NDArray[Incomplete]: ...
 
+# keep in sync with empty (above) and ones (`_core/numeric.pyi`)
+@overload  # 1d, float64 default
+def zeros(
+    shape: SupportsIndex,
+    dtype: None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[np.float64]: ...
+@overload  # 1d, specific dtype
+def zeros[DTypeT: np.dtype](
+    shape: SupportsIndex,
+    dtype: DTypeT | _SupportsDType[DTypeT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> ndarray[tuple[int], DTypeT]: ...
+@overload  # 1d, specific scalar type
+def zeros[ScalarT: np.generic](
+    shape: SupportsIndex,
+    dtype: type[ScalarT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[ScalarT]: ...
+@overload  # 1d, unknown dtype
+def zeros(
+    shape: SupportsIndex,
+    dtype: DTypeLike | None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[Incomplete]: ...
+@overload  # known shape, float64 default
+def zeros[ShapeT: _Shape](
+    shape: ShapeT,
+    dtype: None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array[ShapeT, float64]: ...
+@overload  # known shape, specific dtype
+def zeros[ShapeT: _Shape, DTypeT: np.dtype](
+    shape: ShapeT,
+    dtype: DTypeT | _SupportsDType[DTypeT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> ndarray[ShapeT, DTypeT]: ...
+@overload  # known shape, specific scalar type
+def zeros[ShapeT: _Shape, ScalarT: np.generic](
+    shape: ShapeT,
+    dtype: type[ScalarT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array[ShapeT, ScalarT]: ...
+@overload  # known shape, unknown dtype
+def zeros[ShapeT: _Shape](
+    shape: ShapeT,
+    dtype: DTypeLike | None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> _Array[ShapeT, Incomplete]: ...
+@overload  # unknown shape, float64 default
+def zeros(
+    shape: _ShapeLike,
+    dtype: None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> NDArray[float64]: ...
+@overload  # unknown shape, specific dtype
+def zeros[DTypeT: np.dtype](
+    shape: _ShapeLike,
+    dtype: DTypeT | _SupportsDType[DTypeT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> ndarray[_AnyShape, DTypeT]: ...
+@overload  # unknown shape, specific scalar type
+def zeros[ScalarT: np.generic](
+    shape: _ShapeLike,
+    dtype: type[ScalarT],
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> NDArray[ScalarT]: ...
+@overload  # unknown shape, unknown dtype
+def zeros(
+    shape: _ShapeLike,
+    dtype: DTypeLike | None = None,
+    order: _OrderCF = "C",
+    *,
+    device: L["cpu"] | None = None,
+    like: _SupportsArrayFunc | None = None,
+) -> NDArray[Incomplete]: ...
+
+#
 @overload
 def empty_like[ArrayT: np.ndarray](
     prototype: ArrayT,
@@ -619,15 +702,15 @@ def vdot(a: _ArrayLikeObject_co, b: object, /) -> Any: ...
 @overload
 def vdot(a: object, b: _ArrayLikeObject_co, /) -> Any: ...
 
-def bincount(x: ArrayLike, /, weights: ArrayLike | None = None, minlength: SupportsIndex = 0) -> NDArray[intp]: ...
+#
+def bincount(x: ArrayLike, /, weights: ArrayLike | None = None, minlength: SupportsIndex = 0) -> _Array1D[intp]: ...
 
+#
 def copyto(dst: ndarray, src: ArrayLike, casting: _CastingKind = "same_kind", where: object = True) -> None: ...
 def putmask(a: ndarray, /, mask: _ArrayLikeBool_co, values: ArrayLike) -> None: ...
 
-type _BitOrder = L["big", "little"]
-
 @overload
-def packbits(a: _ArrayLikeInt_co, /, axis: None = None, bitorder: _BitOrder = "big") -> ndarray[tuple[int], dtype[uint8]]: ...
+def packbits(a: _ArrayLikeInt_co, /, axis: None = None, bitorder: _BitOrder = "big") -> _Array1D[uint8]: ...
 @overload
 def packbits(a: _ArrayLikeInt_co, /, axis: SupportsIndex, bitorder: _BitOrder = "big") -> NDArray[uint8]: ...
 
@@ -638,7 +721,7 @@ def unpackbits(
     axis: None = None,
     count: SupportsIndex | None = None,
     bitorder: _BitOrder = "big",
-) -> ndarray[tuple[int], dtype[uint8]]: ...
+) -> _Array1D[uint8]: ...
 @overload
 def unpackbits(
     a: _ArrayLike[uint8],
@@ -647,8 +730,6 @@ def unpackbits(
     count: SupportsIndex | None = None,
     bitorder: _BitOrder = "big",
 ) -> NDArray[uint8]: ...
-
-type _MaxWork = L[-1, 0]
 
 # any two python objects will be accepted, not just `ndarray`s
 def shares_memory(a: object, b: object, /, max_work: _MaxWork = -1) -> bool: ...
@@ -777,30 +858,31 @@ def promote_types(__type1: DTypeLike, __type2: DTypeLike) -> dtype: ...
 def fromstring(
     string: str | bytes,
     dtype: None = None,
-    count: SupportsIndex = ...,
+    count: SupportsIndex = -1,
     *,
     sep: str,
-    like: _SupportsArrayFunc | None = ...,
-) -> NDArray[float64]: ...
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[float64]: ...
 @overload
 def fromstring[ScalarT: np.generic](
     string: str | bytes,
     dtype: _DTypeLike[ScalarT],
-    count: SupportsIndex = ...,
+    count: SupportsIndex = -1,
     *,
     sep: str,
-    like: _SupportsArrayFunc | None = ...,
-) -> NDArray[ScalarT]: ...
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[ScalarT]: ...
 @overload
 def fromstring(
     string: str | bytes,
-    dtype: DTypeLike | None = ...,
-    count: SupportsIndex = ...,
+    dtype: DTypeLike | None = None,
+    count: SupportsIndex = -1,
     *,
     sep: str,
-    like: _SupportsArrayFunc | None = ...,
-) -> NDArray[Any]: ...
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[Any]: ...
 
+#
 @overload
 def frompyfunc[ReturnT](
     func: Callable[[Any], ReturnT], /,
@@ -883,7 +965,7 @@ def fromfile(
     offset: SupportsIndex = ...,
     *,
     like: _SupportsArrayFunc | None = ...,
-) -> NDArray[float64]: ...
+) -> _Array1D[float64]: ...
 @overload
 def fromfile[ScalarT: np.generic](
     file: StrOrBytesPath | _SupportsFileMethods,
@@ -893,7 +975,7 @@ def fromfile[ScalarT: np.generic](
     offset: SupportsIndex = ...,
     *,
     like: _SupportsArrayFunc | None = ...,
-) -> NDArray[ScalarT]: ...
+) -> _Array1D[ScalarT]: ...
 @overload
 def fromfile(
     file: StrOrBytesPath | _SupportsFileMethods,
@@ -903,7 +985,7 @@ def fromfile(
     offset: SupportsIndex = ...,
     *,
     like: _SupportsArrayFunc | None = ...,
-) -> NDArray[Any]: ...
+) -> _Array1D[Any]: ...
 
 @overload
 def fromiter[ScalarT: np.generic](
@@ -926,29 +1008,29 @@ def fromiter(
 def frombuffer(
     buffer: Buffer,
     dtype: None = None,
-    count: SupportsIndex = ...,
-    offset: SupportsIndex = ...,
+    count: SupportsIndex = -1,
+    offset: SupportsIndex = 0,
     *,
-    like: _SupportsArrayFunc | None = ...,
-) -> NDArray[float64]: ...
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[float64]: ...
 @overload
 def frombuffer[ScalarT: np.generic](
     buffer: Buffer,
     dtype: _DTypeLike[ScalarT],
-    count: SupportsIndex = ...,
-    offset: SupportsIndex = ...,
+    count: SupportsIndex = -1,
+    offset: SupportsIndex = 0,
     *,
-    like: _SupportsArrayFunc | None = ...,
-) -> NDArray[ScalarT]: ...
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[ScalarT]: ...
 @overload
 def frombuffer(
     buffer: Buffer,
-    dtype: DTypeLike | None = ...,
-    count: SupportsIndex = ...,
-    offset: SupportsIndex = ...,
+    dtype: DTypeLike | None = None,
+    count: SupportsIndex = -1,
+    offset: SupportsIndex = 0,
     *,
-    like: _SupportsArrayFunc | None = ...,
-) -> NDArray[Any]: ...
+    like: _SupportsArrayFunc | None = None,
+) -> _Array1D[Any]: ...
 
 # keep in sync with ma.core.arange
 # NOTE: The `float64 | Any` return types needed to avoid incompatible overlapping overloads

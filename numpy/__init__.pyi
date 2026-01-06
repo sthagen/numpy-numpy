@@ -328,6 +328,8 @@ from numpy._core.multiarray import (
     promote_types,
     fromstring,
     frompyfunc,
+    flatiter,
+    nditer,
     nested_iters,
     flagsobj,
 )
@@ -715,15 +717,10 @@ _NBitT2 = TypeVar("_NBitT2", bound=NBitBase, default=_NBitT1)  # pyright: ignore
 
 _ItemT_co = TypeVar("_ItemT_co", default=Any, covariant=True)
 _BoolItemT_co = TypeVar("_BoolItemT_co", bound=py_bool, default=py_bool, covariant=True)
-_NumberItemT_co = TypeVar("_NumberItemT_co", bound=complex, default=int | float | complex, covariant=True)
-_InexactItemT_co = TypeVar("_InexactItemT_co", bound=complex, default=float | complex, covariant=True)
-_FlexibleItemT_co = TypeVar(
-    "_FlexibleItemT_co",
-    bound=_CharLike_co | tuple[Any, ...],
-    default=_CharLike_co | tuple[Any, ...],
-    covariant=True,
-)
-_CharacterItemT_co = TypeVar("_CharacterItemT_co", bound=_CharLike_co, default=_CharLike_co, covariant=True)
+_NumberItemT_co = TypeVar("_NumberItemT_co", bound=complex, default=Any, covariant=True)  # either int, float, or complex
+_InexactItemT_co = TypeVar("_InexactItemT_co", bound=complex, default=Any, covariant=True)  # either float or complex
+_FlexibleItemT_co = TypeVar("_FlexibleItemT_co", bound=bytes | str | tuple[Any, ...], default=Any, covariant=True)
+_CharacterItemT_co = TypeVar("_CharacterItemT_co", bound=bytes | str, default=Any, covariant=True)
 _TD64ItemT_co = TypeVar("_TD64ItemT_co", bound=_TD64Item, default=Any, covariant=True)
 _DT64ItemT_co = TypeVar("_DT64ItemT_co", bound=_DT64Item, default=Any, covariant=True)
 
@@ -1597,64 +1594,6 @@ class dtype(Generic[_ScalarT_co], metaclass=_DTypeMeta):  # noqa: UP046
     def str(self) -> LiteralString: ...
     @property
     def type(self) -> type[_ScalarT_co]: ...
-
-@final
-class flatiter(Generic[_ArrayT_co]):
-    __hash__: ClassVar[None] = None  # type: ignore[assignment]  # pyright: ignore[reportIncompatibleMethodOverride]
-
-    @property
-    def base(self, /) -> _ArrayT_co: ...
-    @property
-    def coords[ShapeT: _Shape](self: flatiter[ndarray[ShapeT]], /) -> ShapeT: ...
-    @property
-    def index(self, /) -> int: ...
-
-    # iteration
-    def __len__(self, /) -> int: ...
-    def __iter__(self, /) -> Self: ...
-    def __next__[ScalarT: generic](self: flatiter[NDArray[ScalarT]], /) -> ScalarT: ...
-
-    # indexing
-    @overload  # nd: _[()]
-    def __getitem__(self, key: tuple[()], /) -> _ArrayT_co: ...
-    @overload  # 0d; _[<integer>]
-    def __getitem__[ScalarT: generic](self: flatiter[NDArray[ScalarT]], key: int | integer, /) -> ScalarT: ...
-    @overload  # 1d; _[[*<int>]], _[:], _[...]
-    def __getitem__[DTypeT: dtype](
-        self: flatiter[ndarray[Any, DTypeT]],
-        key: list[int] | slice | EllipsisType | flatiter[NDArray[integer]],
-        /,
-    ) -> ndarray[tuple[int], DTypeT]: ...
-    @overload  # 2d; _[[*[*<int>]]]
-    def __getitem__[DTypeT: dtype](
-        self: flatiter[ndarray[Any, DTypeT]],
-        key: list[list[int]],
-        /,
-    ) -> ndarray[tuple[int, int], DTypeT]: ...
-    @overload  # ?d
-    def __getitem__[DTypeT: dtype](
-        self: flatiter[ndarray[Any, DTypeT]],
-        key: NDArray[integer] | _NestedSequence[int],
-        /,
-    ) -> ndarray[_AnyShape, DTypeT]: ...
-
-    # NOTE: `__setitem__` operates via `unsafe` casting rules, and can thus accept any
-    # type accepted by the relevant underlying `np.generic` constructor, which isn't
-    # known statically. So we cannot meaningfully annotate the value parameter.
-    def __setitem__(self, key: slice | EllipsisType | _ArrayLikeInt, val: object, /) -> None: ...
-
-    # NOTE: `dtype` and `copy` are no-ops at runtime, so we don't support them here to
-    # avoid confusion
-    def __array__[DTypeT: dtype](
-        self: flatiter[ndarray[Any, DTypeT]],
-        dtype: None = None,
-        /,
-        *,
-        copy: None = None,
-    ) -> ndarray[tuple[int], DTypeT]: ...
-
-    # This returns a flat copy of the underlying array, not of the iterator itself
-    def copy[DTypeT: dtype](self: flatiter[ndarray[Any, DTypeT]], /) -> ndarray[tuple[int], DTypeT]: ...
 
 @type_check_only
 class _ArrayOrScalarCommon:
@@ -6064,96 +6003,6 @@ class broadcast:
     def __next__(self) -> tuple[Any, ...]: ...
     def __iter__(self) -> Self: ...
     def reset(self) -> None: ...
-
-@final
-class nditer:
-    @overload
-    def __init__(
-        self,
-        /,
-        op: ArrayLike,
-        flags: Sequence[_NDIterFlagsKind] | None = None,
-        op_flags: Sequence[_NDIterFlagsOp] | None = None,
-        op_dtypes: DTypeLike | None = None,
-        order: _OrderKACF = "K",
-        casting: _CastingKind = "safe",
-        op_axes: Sequence[SupportsIndex] | None = None,
-        itershape: _ShapeLike | None = None,
-        buffersize: SupportsIndex = 0,
-    ) -> None: ...
-    @overload
-    def __init__(
-        self,
-        /,
-        op: Sequence[ArrayLike | None],
-        flags: Sequence[_NDIterFlagsKind] | None = None,
-        op_flags: Sequence[Sequence[_NDIterFlagsOp]] | None = None,
-        op_dtypes: Sequence[DTypeLike | None] | None = None,
-        order: _OrderKACF = "K",
-        casting: _CastingKind = "safe",
-        op_axes: Sequence[Sequence[SupportsIndex]] | None = None,
-        itershape: _ShapeLike | None = None,
-        buffersize: SupportsIndex = 0,
-    ) -> None: ...
-
-    def __enter__(self) -> nditer: ...
-    def __exit__(
-        self,
-        exc_type: type[BaseException] | None,
-        exc_value: BaseException | None,
-        traceback: TracebackType | None,
-    ) -> None: ...
-    def __iter__(self) -> nditer: ...
-    def __next__(self) -> tuple[NDArray[Any], ...]: ...
-    def __len__(self) -> int: ...
-    def __copy__(self) -> nditer: ...
-    @overload
-    def __getitem__(self, index: SupportsIndex) -> NDArray[Any]: ...
-    @overload
-    def __getitem__(self, index: slice) -> tuple[NDArray[Any], ...]: ...
-    def __setitem__(self, index: slice | SupportsIndex, value: ArrayLike) -> None: ...
-    def close(self) -> None: ...
-    def copy(self) -> nditer: ...
-    def debug_print(self) -> None: ...
-    def enable_external_loop(self) -> None: ...
-    def iternext(self) -> py_bool: ...
-    def remove_axis(self, i: SupportsIndex, /) -> None: ...
-    def remove_multi_index(self) -> None: ...
-    def reset(self) -> None: ...
-    @property
-    def dtypes(self) -> tuple[dtype, ...]: ...
-    @property
-    def finished(self) -> py_bool: ...
-    @property
-    def has_delayed_bufalloc(self) -> py_bool: ...
-    @property
-    def has_index(self) -> py_bool: ...
-    @property
-    def has_multi_index(self) -> py_bool: ...
-    @property
-    def index(self) -> int: ...
-    @property
-    def iterationneedsapi(self) -> py_bool: ...
-    @property
-    def iterindex(self) -> int: ...
-    @property
-    def iterrange(self) -> tuple[int, ...]: ...
-    @property
-    def itersize(self) -> int: ...
-    @property
-    def itviews(self) -> tuple[NDArray[Any], ...]: ...
-    @property
-    def multi_index(self) -> tuple[int, ...]: ...
-    @property
-    def ndim(self) -> int: ...
-    @property
-    def nop(self) -> int: ...
-    @property
-    def operands(self) -> tuple[NDArray[Any], ...]: ...
-    @property
-    def shape(self) -> tuple[int, ...]: ...
-    @property
-    def value(self) -> tuple[NDArray[Any], ...]: ...
 
 def from_dlpack(
     x: _SupportsDLPack[None],

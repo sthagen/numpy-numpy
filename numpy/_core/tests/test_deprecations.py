@@ -145,51 +145,6 @@ class TestBincount(_DeprecationTestCase):
         self.assert_deprecated(lambda: np.bincount(badlist))
 
 
-class BuiltInRoundComplexDType(_DeprecationTestCase):
-    # 2020-03-31 1.19.0
-    deprecated_types = [np.csingle, np.cdouble, np.clongdouble]
-    not_deprecated_types = [
-        np.int8, np.int16, np.int32, np.int64,
-        np.uint8, np.uint16, np.uint32, np.uint64,
-        np.float16, np.float32, np.float64,
-    ]
-
-    def test_deprecated(self):
-        for scalar_type in self.deprecated_types:
-            scalar = scalar_type(0)
-            self.assert_deprecated(round, args=(scalar,))
-            self.assert_deprecated(round, args=(scalar, 0))
-            self.assert_deprecated(round, args=(scalar,), kwargs={'ndigits': 0})
-
-    def test_not_deprecated(self):
-        for scalar_type in self.not_deprecated_types:
-            scalar = scalar_type(0)
-            self.assert_not_deprecated(round, args=(scalar,))
-            self.assert_not_deprecated(round, args=(scalar, 0))
-            self.assert_not_deprecated(round, args=(scalar,), kwargs={'ndigits': 0})
-
-
-class FlatteningConcatenateUnsafeCast(_DeprecationTestCase):
-    # NumPy 1.20, 2020-09-03
-    message = "concatenate with `axis=None` will use same-kind casting"
-
-    def test_deprecated(self):
-        self.assert_deprecated(np.concatenate,
-                args=(([0.], [1.]),),
-                kwargs={'axis': None, 'out': np.empty(2, dtype=np.int64)})
-
-    def test_not_deprecated(self):
-        self.assert_not_deprecated(np.concatenate,
-                args=(([0.], [1.]),),
-                kwargs={'axis': None, 'out': np.empty(2, dtype=np.int64),
-                        'casting': "unsafe"})
-
-        with assert_raises(TypeError):
-            # Tests should notice if the deprecation warning is given first...
-            np.concatenate(([0.], [1.]), out=np.empty(2, dtype=np.int64),
-                           casting="same_kind")
-
-
 class TestCtypesGetter(_DeprecationTestCase):
     ctypes = np.array([1]).ctypes
 
@@ -260,17 +215,6 @@ class TestRemovedGlobals:
             getattr(np, name)
 
 
-class TestMathAlias(_DeprecationTestCase):
-    def test_deprecated_np_lib_math(self):
-        self.assert_deprecated(lambda: np.lib.math)
-
-
-class TestLibImports(_DeprecationTestCase):
-    # Deprecated in Numpy 1.26.0, 2023-09
-    def test_lib_functions_deprecation_call(self):
-        self.assert_deprecated(lambda: np.chararray)
-
-
 class TestDeprecatedDTypeAliases(_DeprecationTestCase):
 
     def _check_for_warning(self, func):
@@ -320,6 +264,9 @@ class TestDeprecatedArrayAttributeSetting(_DeprecationTestCase):
         x = np.eye(2)
         self.assert_deprecated(setattr, args=(x, 'strides', x.strides))
 
+    def test_deprecated_shape_set(self):
+        x = np.eye(2)
+        self.assert_deprecated(setattr, args=(x, "shape", (4, 1)))
 
 class TestDeprecatedDTypeParenthesizedRepeatCount(_DeprecationTestCase):
     message = "Passing in a parenthesized single number"

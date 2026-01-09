@@ -112,7 +112,8 @@ class TestRegression:
         def rs():
             b.shape = (10,)
 
-        assert_raises(AttributeError, rs)
+        with pytest.warns(DeprecationWarning):  # gh-29536
+            assert_raises(AttributeError, rs)
 
     def test_bool(self):
         # Ticket #60
@@ -653,7 +654,8 @@ class TestRegression:
     def test_reshape_zero_size(self):
         # GitHub Issue #2700, setting shape failed for 0-sized arrays
         a = np.ones((0, 2))
-        a.shape = (-1, 2)
+        with pytest.warns(DeprecationWarning):
+            a.shape = (-1, 2)
 
     def test_reshape_trailing_ones_strides(self):
         # GitHub issue gh-2949, bad strides for trailing ones of new shape
@@ -1462,22 +1464,6 @@ class TestRegression:
         x[x.nonzero()] = x.ravel()[:1]
         assert_(x[0, 1] == x[0, 0])
 
-    @pytest.mark.skipif(
-        sys.version_info >= (3, 12),
-        reason="Python 3.12 has immortal refcounts, this test no longer works."
-    )
-    @pytest.mark.skipif(not HAS_REFCOUNT, reason="Python lacks refcounts")
-    def test_structured_arrays_with_objects2(self):
-        # Ticket #1299 second test
-        stra = 'aaaa'
-        strb = 'bbbb'
-        numb = sys.getrefcount(strb)
-        numa = sys.getrefcount(stra)
-        x = np.array([[(0, stra), (1, strb)]], 'i8,O')
-        x[x.nonzero()] = x.ravel()[:1]
-        assert_(sys.getrefcount(strb) == numb)
-        assert_(sys.getrefcount(stra) == numa + 2)
-
     def test_duplicate_title_and_name(self):
         # Ticket #1254
         dtspec = [(('a', 'a'), 'i'), ('b', 'i')]
@@ -1585,8 +1571,7 @@ class TestRegression:
     @pytest.mark.skipif(not HAS_REFCOUNT, reason="Python lacks refcounts")
     def test_take_refcount(self):
         # ticket #939
-        a = np.arange(16, dtype=float)
-        a.shape = (4, 4)
+        a = np.arange(16, dtype=float).reshape((4, 4))
         lut = np.ones((5 + 3, 4), float)
         rgba = np.empty(shape=a.shape + (4,), dtype=lut.dtype)
         c1 = sys.getrefcount(rgba)

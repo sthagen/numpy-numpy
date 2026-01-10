@@ -3065,6 +3065,11 @@ class TestBincount:
         with assert_raises(ValueError):
             np.bincount(vals)
 
+    @pytest.mark.parametrize("vals", [[1.0], [1j], ["1"], [b"1"]])
+    def test_error_not_int(self, vals):
+        with assert_raises(TypeError):
+            np.bincount(vals)
+
     @pytest.mark.parametrize("dt", np.typecodes["AllInteger"])
     def test_gh_28354(self, dt):
         a = np.array([0, 1, 1, 3, 2, 1, 7], dtype=dt)
@@ -3291,6 +3296,11 @@ quantile_methods = [
     'median_unbiased', 'normal_unbiased', 'nearest', 'lower', 'higher',
     'midpoint']
 
+# Note: Technically, averaged_inverted_cdf and midpoint are not interpolated.
+# but NumPy doesn't currently make a difference (at least w.r.t. to promotion).
+interpolating_quantile_methods = [
+    'averaged_inverted_cdf', 'interpolated_inverted_cdf', 'hazen', 'weibull',
+    'linear', 'median_unbiased', 'normal_unbiased', 'midpoint']
 
 methods_supporting_weights = ["inverted_cdf"]
 
@@ -3921,6 +3931,22 @@ class TestPercentile:
         assert z == one
         assert np.array(z).dtype == a.dtype
 
+    @pytest.mark.parametrize("method", interpolating_quantile_methods)
+    @pytest.mark.parametrize("q", [50, 10.0])
+    def test_q_weak_promotion(self, method, q):
+        a = np.array([1, 2, 3, 4, 5], dtype=np.float32)
+        value = np.percentile(a, q, method=method)
+        assert value.dtype == np.float32
+
+    @pytest.mark.parametrize("method", interpolating_quantile_methods)
+    def test_q_strong_promotion(self, method):
+        # For interpolating methods, the dtype should be float64, for
+        # discrete ones the original int8.  (technically, mid-point has no
+        # reason to take into account `q`, but does so anyway.)
+        a = np.array([1, 2, 3, 4, 5], dtype=np.float32)
+        value = np.percentile(a, np.float64(50), method=method)
+        assert value.dtype == np.float64
+
 
 class TestQuantile:
     # most of this is already tested by TestPercentile
@@ -4342,6 +4368,22 @@ class TestQuantile:
         value = np.quantile(a, q)
         assert value == q * 50_000
         assert value.dtype == np.float16
+
+    @pytest.mark.parametrize("method", interpolating_quantile_methods)
+    @pytest.mark.parametrize("q", [0.5, 1])
+    def test_q_weak_promotion(self, method, q):
+        a = np.array([1, 2, 3, 4, 5], dtype=np.float32)
+        value = np.quantile(a, q, method=method)
+        assert value.dtype == np.float32
+
+    @pytest.mark.parametrize("method", interpolating_quantile_methods)
+    def test_q_strong_promotion(self, method):
+        # For interpolating methods, the dtype should be float64, for
+        # discrete ones the original int8.  (technically, mid-point has no
+        # reason to take into account `q`, but does so anyway.)
+        a = np.array([1, 2, 3, 4, 5], dtype=np.float32)
+        value = np.quantile(a, np.float64(0.5), method=method)
+        assert value.dtype == np.float64
 
 
 class TestLerp:

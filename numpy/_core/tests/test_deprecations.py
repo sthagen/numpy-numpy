@@ -9,7 +9,6 @@ import warnings
 import pytest
 
 import numpy as np
-import numpy._core._struct_ufunc_tests as struct_ufunc
 from numpy._core._multiarray_tests import fromstring_null_term_c_api  # noqa: F401
 from numpy.testing import assert_raises
 
@@ -137,14 +136,6 @@ class TestTestDeprecated:
         test_case_instance.assert_deprecated(foo)
 
 
-class TestBincount(_DeprecationTestCase):
-    # 2024-07-29, 2.1.0
-    @pytest.mark.parametrize('badlist', [[0.5, 1.2, 1.5],
-                                         ['0', '1', '1']])
-    def test_bincount_bad_list(self, badlist):
-        self.assert_deprecated(lambda: np.bincount(badlist))
-
-
 class TestCtypesGetter(_DeprecationTestCase):
     ctypes = np.array([1]).ctypes
 
@@ -216,21 +207,11 @@ class TestRemovedGlobals:
 
 
 class TestDeprecatedDTypeAliases(_DeprecationTestCase):
-
-    def _check_for_warning(self, func):
-        with pytest.warns(DeprecationWarning,
-                          match="alias 'a' was deprecated in NumPy 2.0") as w:
-            func()
-        assert len(w) == 1
-
-    def test_a_dtype_alias(self):
-        for dtype in ["a", "a10"]:
-            f = lambda: np.dtype(dtype)
-            self._check_for_warning(f)
-            self.assert_deprecated(f)
-            f = lambda: np.array(["hello", "world"]).astype("a10")
-            self._check_for_warning(f)
-            self.assert_deprecated(f)
+    @pytest.mark.parametrize("dtype_code", ["a", "a10"])
+    def test_a_dtype_alias(self, dtype_code: str):
+        # Deprecated in 2.0, removed in 2.5, 2025-12
+        with pytest.raises(TypeError):
+            np.dtype(dtype_code)
 
 
 class TestDeprecatedArrayWrap(_DeprecationTestCase):
@@ -274,26 +255,6 @@ class TestDeprecatedDTypeParenthesizedRepeatCount(_DeprecationTestCase):
     @pytest.mark.parametrize("string", ["(2)i,", "(3)3S,", "f,(2)f"])
     def test_parenthesized_repeat_count(self, string):
         self.assert_deprecated(np.dtype, args=(string,))
-
-
-class TestAddNewdocUFunc(_DeprecationTestCase):
-    # Deprecated in Numpy 2.2, 2024-11
-    @pytest.mark.thread_unsafe(
-        reason="modifies and checks docstring which is global state"
-    )
-    def test_deprecated(self):
-        doc = struct_ufunc.add_triplet.__doc__
-        # gh-26718
-        # This test mutates the C-level docstring pointer for add_triplet,
-        # which is permanent once set. Skip when re-running tests.
-        if doc is not None and "new docs" in doc:
-            pytest.skip("Cannot retest deprecation, otherwise ValueError: "
-                "Cannot change docstring of ufunc with non-NULL docstring")
-        self.assert_deprecated(
-            lambda: np._core.umath._add_newdoc_ufunc(
-                struct_ufunc.add_triplet, "new docs"
-            )
-        )
 
 
 class TestDTypeAlignBool(_VisibleDeprecationTestCase):

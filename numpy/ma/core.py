@@ -36,7 +36,7 @@ from numpy import (
     amax,
     amin,
     angle,
-    array as narray,  # noqa: F401
+    array as narray,
     bool_,
     expand_dims,
     finfo,  # noqa: F401
@@ -2590,7 +2590,7 @@ def flatten_structured_array(a):
 
         """
         for elm in iter(iterable):
-            if hasattr(elm, '__iter__'):
+            if hasattr(elm, "__iter__") and not isinstance(elm, (str, bytes)):
                 yield from flatten_sequence(elm)
             else:
                 yield elm

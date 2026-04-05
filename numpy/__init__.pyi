@@ -739,7 +739,10 @@ type _Truthy = L[True, 1] | bool_[L[True]]
 
 type _1D = tuple[int]
 type _2D = tuple[int, int]
+type _3D = tuple[int, int, int]
+
 type _2Tuple[T] = tuple[T, T]
+type _3Tuple[T] = tuple[T, T, T]
 
 type _ArrayUInt_co = NDArray[unsignedinteger | bool_]
 type _ArrayInt_co = NDArray[integer | bool_]
@@ -2339,6 +2342,149 @@ class ndarray(_ArrayOrScalarCommon, Generic[_ShapeT_co, _DTypeT_co]):
     ) -> ArrayT: ...
 
     #
+    @override  # type: ignore[override]
+    @overload  # +integer | ~object_
+    def mean(
+        self: NDArray[integer | bool_ | object_],
+        axis: None = None,
+        dtype: None = None,
+        out: None = None,
+        *,
+        keepdims: L[False] | _NoValueType = ...,
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> float64: ...
+    @overload  # +integer, axis: <given>
+    def mean(
+        self: NDArray[integer | bool_],
+        axis: int | tuple[int, ...],
+        dtype: None = None,
+        out: None = None,
+        *,
+        keepdims: L[False] | _NoValueType = ...,
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> NDArray[float64]: ...
+    @overload  # +integer, keepdims=True
+    def mean(
+        self: NDArray[integer | bool_],
+        axis: int | tuple[int, ...] | None = None,
+        dtype: None = None,
+        out: None = None,
+        *,
+        keepdims: L[True],
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> ndarray[_ShapeT_co, dtype[float64]]: ...
+    @overload  # ~inexact | timedelta64
+    def mean[ScalarT: inexact | timedelta64](
+        self: NDArray[ScalarT],
+        axis: None = None,
+        dtype: None = None,
+        out: None = None,
+        *,
+        keepdims: L[False] | _NoValueType = ...,
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> ScalarT: ...
+    @overload  # ~inexact | timedelta64, axis: <given>
+    def mean[ScalarT: inexact | timedelta64 | object_](
+        self: NDArray[ScalarT],
+        axis: int | tuple[int, ...],
+        dtype: None = None,
+        out: None = None,
+        *,
+        keepdims: L[False] | _NoValueType = ...,
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> NDArray[ScalarT]: ...
+    @overload  # ~inexact | timedelta64 | object_, keepdims=True
+    def mean[ArrayT: NDArray[inexact | timedelta64 | object_]](
+        self: ArrayT,
+        axis: int | tuple[int, ...] | None = None,
+        dtype: None = None,
+        out: None = None,
+        *,
+        keepdims: L[True],
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> ArrayT: ...
+    @overload  # dtype: ScalarT
+    def mean[ScalarT: generic](
+        self: NDArray[number | bool_ | timedelta64 | object_],
+        axis: None = None,
+        *,
+        dtype: _DTypeLike[ScalarT],
+        out: None = None,
+        keepdims: L[False] | _NoValueType = ...,
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> ScalarT: ...
+    @overload  # dtype: ScalarT (keyword), keepdims=True
+    def mean[ScalarT: generic](
+        self: NDArray[number | bool_ | timedelta64 | object_],
+        axis: int | tuple[int, ...] | None = None,
+        *,
+        dtype: _DTypeLike[ScalarT],
+        out: None = None,
+        keepdims: L[True],
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> ndarray[_ShapeT_co, dtype[ScalarT]]: ...
+    @overload  # dtype: ScalarT (positional), keepdims=True
+    def mean[ScalarT: generic](
+        self: NDArray[number | bool_ | timedelta64 | object_],
+        axis: int | tuple[int, ...] | None,
+        dtype: _DTypeLike[ScalarT],
+        out: None = None,
+        *,
+        keepdims: L[True],
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> ndarray[_ShapeT_co, dtype[ScalarT]]: ...
+    @overload  # axis: <given>, dtype: ScalarT
+    def mean[ScalarT: generic](
+        self: NDArray[number | bool_ | timedelta64 | object_],
+        axis: int | tuple[int, ...],
+        dtype: _DTypeLike[ScalarT],
+        out: None = None,
+        *,
+        keepdims: L[False] | _NoValueType = ...,
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> NDArray[ScalarT]: ...
+    @overload  # out: ArrayT
+    def mean[ArrayT: ndarray](
+        self: NDArray[number | bool_ | timedelta64 | object_],
+        axis: int | tuple[int, ...] | None = None,
+        dtype: DTypeLike | None = None,
+        *,
+        out: ArrayT,
+        keepdims: py_bool | _NoValueType = ...,
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> ArrayT: ...
+    @overload  # fallback
+    def mean(
+        self: NDArray[number | bool_ | timedelta64 | object_],
+        axis: None = None,
+        dtype: DTypeLike | None = None,
+        out: None = None,
+        *,
+        keepdims: L[False] | _NoValueType = ...,
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> Any: ...
+    @overload  # fallback, axis: <given>
+    def mean(
+        self: NDArray[number | bool_ | timedelta64 | object_],
+        axis: int | tuple[int, ...],
+        dtype: DTypeLike | None = None,
+        out: None = None,
+        *,
+        keepdims: L[False] | _NoValueType = ...,
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> ndarray: ...
+    @overload  # fallback, keepdims=True
+    def mean(  # pyright: ignore[reportIncompatibleMethodOverride]
+        self: NDArray[number | bool_ | timedelta64 | object_],
+        axis: int | tuple[int, ...] | None = None,
+        dtype: DTypeLike | None = None,
+        out: None = None,
+        *,
+        keepdims: L[True],
+        where: _ArrayLikeBool_co | _NoValueType = ...,
+    ) -> ndarray[_ShapeT_co]: ...
+
+    #
     @overload
     def partition(
         self,
@@ -2414,8 +2560,17 @@ class ndarray(_ArrayOrScalarCommon, Generic[_ShapeT_co, _DTypeT_co]):
     @overload
     def dot[ArrayT: ndarray](self, b: ArrayLike, /, out: ArrayT) -> ArrayT: ...
 
-    # `nonzero()` raises for 0d arrays/generics
-    def nonzero(self) -> tuple[ndarray[tuple[int], _dtype[intp]], ...]: ...
+    # keep in sync with `_core.fromnumeric.nonzero`
+    @overload  # ?d  (workaround)
+    def nonzero(self: ndarray[tuple[Never, Never, Never, Never]]) -> tuple[ndarray[_1D, _dtype[intp]], ...]: ...
+    @overload  # 1d
+    def nonzero(self: ndarray[_1D]) -> tuple[ndarray[_1D, _dtype[intp]]]: ...
+    @overload  # 2d
+    def nonzero(self: ndarray[_2D]) -> _2Tuple[ndarray[_1D, _dtype[intp]]]: ...
+    @overload  # 3d
+    def nonzero(self: ndarray[_3D]) -> _3Tuple[ndarray[_1D, _dtype[intp]]]: ...
+    @overload  # 3d
+    def nonzero(self) -> tuple[ndarray[_1D, _dtype[intp]], ...]: ...
 
     @overload
     def searchsorted(
@@ -5464,9 +5619,11 @@ class timedelta64(_IntegralMixin, generic[_TD64ItemT_co], Generic[_TD64ItemT_co]
 
     #
     @overload
-    def __add__(self: timedelta64[Never], x: timedelta64[int | dt.timedelta] | _IntLike_co, /) -> timedelta64: ...
+    def __add__(self: timedelta64[Never], x: timedelta64[int | dt.timedelta], /) -> timedelta64: ...
     @overload
-    def __add__(self: timedelta64[None], x: _TD64Like_co, /) -> timedelta64[None]: ...
+    @overload
+    def __add__(self: timedelta64[None], x: timedelta64, /) -> timedelta64[None]: ...
+    @overload
     @overload
     def __add__(self: timedelta64[int | dt.timedelta], x: timedelta64[Never], /) -> timedelta64: ...
     @overload
@@ -5481,15 +5638,20 @@ class timedelta64(_IntegralMixin, generic[_TD64ItemT_co], Generic[_TD64ItemT_co]
     ) -> AnyDateOrTimeT: ...
     @overload
     def __add__[AnyItemT: (dt.timedelta, int, None, _TD64Item)](
-        self: timedelta64[AnyItemT], x: timedelta64[AnyItemT] | _IntLike_co, /
+        self: timedelta64[AnyItemT], x: timedelta64[AnyItemT], /
+    ) -> timedelta64[AnyItemT]: ...
+    @overload
+    @deprecated("Adding bare integers to NumPy timedelta is deprecated, and will raise an error in the future.")
+    def __add__[AnyItemT: (dt.timedelta, int, None, _TD64Item)](
+        self: timedelta64[AnyItemT], x: _IntLike_co, /
     ) -> timedelta64[AnyItemT]: ...
     __radd__ = __add__
 
     #
     @overload
-    def __sub__(self: timedelta64[Never], b: timedelta64[int | dt.timedelta] | _IntLike_co, /) -> timedelta64: ...
+    def __sub__(self: timedelta64[Never], b: timedelta64[int | dt.timedelta], /) -> timedelta64: ...
     @overload
-    def __sub__(self: timedelta64[None], b: _TD64Like_co, /) -> timedelta64[None]: ...
+    def __sub__(self: timedelta64[None], b: timedelta64, /) -> timedelta64[None]: ...
     @overload
     def __sub__(self: timedelta64[int | dt.timedelta], b: timedelta64[Never], /) -> timedelta64: ...
     @overload
@@ -5502,15 +5664,20 @@ class timedelta64(_IntegralMixin, generic[_TD64ItemT_co], Generic[_TD64ItemT_co]
     def __sub__(self: timedelta64[dt.timedelta], b: dt.timedelta, /) -> dt.timedelta: ...
     @overload
     def __sub__[AnyItemT: (dt.timedelta, int, None, _TD64Item)](
-        self: timedelta64[AnyItemT], b: timedelta64[AnyItemT] | _IntLike_co, /
+        self: timedelta64[AnyItemT], b: timedelta64[AnyItemT], /
+    ) -> timedelta64[AnyItemT]: ...
+    @overload
+    @deprecated("Subtracting bare integers from NumPy timedelta is deprecated, and will raise an error in the future.")
+    def __sub__[AnyItemT: (dt.timedelta, int, None, _TD64Item)](
+        self: timedelta64[AnyItemT], b: _IntLike_co, /
     ) -> timedelta64[AnyItemT]: ...
 
     # NOTE: subtraction is not commutative, so __rsub__ differs from __sub__.
     # This confuses mypy, so we ignore the [misc] errors it reports.
     @overload
-    def __rsub__(self: timedelta64[Never], a: timedelta64[int | dt.timedelta] | _IntLike_co, /) -> timedelta64: ...
+    def __rsub__(self: timedelta64[Never], a: timedelta64[int | dt.timedelta], /) -> timedelta64: ...
     @overload
-    def __rsub__(self: timedelta64[None], a: _TD64Like_co, /) -> timedelta64[None]: ...
+    def __rsub__(self: timedelta64[None], a: timedelta64, /) -> timedelta64[None]: ...
     @overload
     def __rsub__[AnyDateT: (dt.datetime, dt.date)](self: timedelta64[dt.timedelta], a: AnyDateT, /) -> AnyDateT: ...
     @overload
@@ -5518,8 +5685,13 @@ class timedelta64(_IntegralMixin, generic[_TD64ItemT_co], Generic[_TD64ItemT_co]
         self: timedelta64[dt.timedelta], a: timedelta64[AnyItemT], /
     ) -> timedelta64[AnyItemT]: ...
     @overload
-    def __rsub__[AnyItemT: (dt.timedelta, int, None, _TD64Item)](  # type: ignore[misc]
-        self: timedelta64[AnyItemT], a: timedelta64[AnyItemT] | _IntLike_co, /
+    def __rsub__[AnyItemT: (dt.timedelta, int, None, _TD64Item)](
+        self: timedelta64[AnyItemT], a: timedelta64[AnyItemT], /
+    ) -> timedelta64[AnyItemT]: ...
+    @overload
+    @deprecated("Subtracting NumPy timedelta from bare integers is deprecated, and will raise an error in the future.")
+    def __rsub__[AnyItemT: (dt.timedelta, int, None, _TD64Item)](
+        self: timedelta64[AnyItemT], a: _IntLike_co, /
     ) -> timedelta64[AnyItemT]: ...
     @overload
     def __rsub__(self, a: timedelta64[None], /) -> timedelta64[None]: ...  # type: ignore[overload-cannot-match]
@@ -5635,31 +5807,56 @@ class timedelta64(_IntegralMixin, generic[_TD64ItemT_co], Generic[_TD64ItemT_co]
     @overload
     def __rfloordiv__(self: timedelta64[dt.timedelta], a: dt.timedelta, /) -> int: ...
 
+    # these mypy `has_type` errors appear to be false positives
     @overload
-    def __lt__(self, other: _TD64Like_co, /) -> bool_: ...
+    def __lt__(self, other: timedelta64, /) -> bool_: ...  # type: ignore[has-type]
     @overload
-    def __lt__(self, other: _ArrayLikeTD64_co | _NestedSequence[_SupportsGT], /) -> NDArray[bool_]: ...
+    @deprecated("Comparing NumPy timedelta with bare integers is deprecated, and will raise an error in the future.")
+    def __lt__(self, other: _IntLike_co, /) -> bool_: ...
+    @overload
+    @deprecated("Comparing NumPy timedelta with bare integers is deprecated, and will raise an error in the future.")
+    def __lt__(self, other: _ArrayLikeInt_co, /) -> NDArray[bool_]: ...
+    @overload
+    def __lt__(self, other: _ArrayLike[timedelta64] | _NestedSequence[_SupportsGT], /) -> NDArray[bool_]: ...
     @overload
     def __lt__(self, other: _SupportsGT, /) -> bool_: ...
 
     @overload
-    def __le__(self, other: _TD64Like_co, /) -> bool_: ...
+    def __le__(self, other: timedelta64, /) -> bool_: ...  # type: ignore[has-type]
     @overload
-    def __le__(self, other: _ArrayLikeTD64_co | _NestedSequence[_SupportsGE], /) -> NDArray[bool_]: ...
+    @deprecated("Comparing NumPy timedelta with bare integers is deprecated, and will raise an error in the future.")
+    def __le__(self, other: _IntLike_co, /) -> bool_: ...
+    @overload
+    @deprecated("Comparing NumPy timedelta with bare integers is deprecated, and will raise an error in the future.")
+    def __le__(self, other: _ArrayLikeInt_co, /) -> NDArray[bool_]: ...
+    @overload
+    def __le__(self, other: _ArrayLike[timedelta64] | _NestedSequence[_SupportsGE], /) -> NDArray[bool_]: ...
     @overload
     def __le__(self, other: _SupportsGE, /) -> bool_: ...
 
     @overload
-    def __gt__(self, other: _TD64Like_co, /) -> bool_: ...
+    def __gt__(self, other: timedelta64, /) -> bool_: ...
     @overload
-    def __gt__(self, other: _ArrayLikeTD64_co | _NestedSequence[_SupportsLT], /) -> NDArray[bool_]: ...
+    @deprecated("Comparing NumPy timedelta with bare integers is deprecated, and will raise an error in the future.")
+    def __gt__(self, other: _IntLike_co, /) -> bool_: ...
+    @overload
+    @deprecated("Comparing NumPy timedelta with bare integers is deprecated, and will raise an error in the future.")
+    def __gt__(self, other: _ArrayLikeInt_co, /) -> NDArray[bool_]: ...
+    @overload
+    def __gt__(self, other: _ArrayLike[timedelta64] | _NestedSequence[_SupportsLT], /) -> NDArray[bool_]: ...
     @overload
     def __gt__(self, other: _SupportsLT, /) -> bool_: ...
 
     @overload
-    def __ge__(self, other: _TD64Like_co, /) -> bool_: ...
+    def __ge__(self, other: timedelta64, /) -> bool_: ...
     @overload
-    def __ge__(self, other: _ArrayLikeTD64_co | _NestedSequence[_SupportsLE], /) -> NDArray[bool_]: ...
+    @deprecated("Comparing NumPy timedelta with bare integers is deprecated, and will raise an error in the future.")
+    def __ge__(self, other: _IntLike_co, /) -> bool_: ...
+    @overload
+    @deprecated("Comparing NumPy timedelta with bare integers is deprecated, and will raise an error in the future.")
+    def __ge__(self, other: _ArrayLikeInt_co, /) -> NDArray[bool_]: ...
+    @overload
+    def __ge__(self, other: _ArrayLike[timedelta64] | _NestedSequence[_SupportsLE], /) -> NDArray[bool_]: ...
     @overload
     def __ge__(self, other: _SupportsLE, /) -> bool_: ...
 

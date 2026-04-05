@@ -1,5 +1,6 @@
 """Tests for :mod:`_core.fromnumeric`."""
 
+import datetime as dt
 from typing import Any, assert_type
 
 import numpy as np
@@ -11,12 +12,15 @@ AR_b: npt.NDArray[np.bool]
 AR_f4: npt.NDArray[np.float32]
 AR_f4_1d: np.ndarray[tuple[int], np.dtype[np.float32]]
 AR_f4_2d: np.ndarray[tuple[int, int], np.dtype[np.float32]]
+AR_f4_3d: np.ndarray[tuple[int, int, int], np.dtype[np.float32]]
 AR_c16: npt.NDArray[np.complex128]
 AR_u8: npt.NDArray[np.uint64]
 AR_i8: npt.NDArray[np.int64]
 AR_O: npt.NDArray[np.object_]
 AR_subclass: NDArraySubclass
-AR_m: npt.NDArray[np.timedelta64]
+AR_m_ns: npt.NDArray[np.timedelta64[int]]
+AR_m_s: npt.NDArray[np.timedelta64[dt.timedelta]]
+AR_m_nat: npt.NDArray[np.timedelta64[None]]
 AR_0d: np.ndarray[tuple[()]]
 AR_1d: np.ndarray[tuple[int]]
 AR_nd: np.ndarray
@@ -155,10 +159,12 @@ assert_type(np.ravel(f), np.ndarray[tuple[int], np.dtype[np.float64 | Any]])
 assert_type(np.ravel(AR_b), np.ndarray[tuple[int], np.dtype[np.bool]])
 assert_type(np.ravel(AR_f4), np.ndarray[tuple[int], np.dtype[np.float32]])
 
-assert_type(np.nonzero(AR_b), tuple[np.ndarray[tuple[int], np.dtype[np.intp]], ...])
-assert_type(np.nonzero(AR_f4), tuple[np.ndarray[tuple[int], np.dtype[np.intp]], ...])
-assert_type(np.nonzero(AR_1d), tuple[np.ndarray[tuple[int], np.dtype[np.intp]], ...])
-assert_type(np.nonzero(AR_nd), tuple[np.ndarray[tuple[int], np.dtype[np.intp]], ...])
+type _Int1D = np.ndarray[tuple[int], np.dtype[np.intp]]
+
+assert_type(np.nonzero(AR_f4), tuple[_Int1D, ...])
+assert_type(np.nonzero(AR_f4_1d), tuple[_Int1D])
+assert_type(np.nonzero(AR_f4_2d), tuple[_Int1D, _Int1D])
+assert_type(np.nonzero(AR_f4_3d), tuple[_Int1D, _Int1D, _Int1D])
 
 assert_type(np.shape(b), tuple[()])
 assert_type(np.shape(f), tuple[()])
@@ -336,23 +342,35 @@ assert_type(np.around([1.5]), npt.NDArray[Any])
 assert_type(np.around(AR_f4, out=AR_subclass), NDArraySubclass)
 assert_type(np.around(AR_f4_1d), np.ndarray[tuple[int], np.dtype[np.float32]])
 
-assert_type(np.mean(AR_b), np.floating)
-assert_type(np.mean(AR_i8), np.floating)
-assert_type(np.mean(AR_f4), np.floating)
-assert_type(np.mean(AR_m), np.timedelta64)
-assert_type(np.mean(AR_c16), np.complexfloating)
-assert_type(np.mean(AR_O), Any)
-assert_type(np.mean(AR_f4, axis=0), Any)
-assert_type(np.mean(AR_f4, keepdims=True), Any)
+assert_type(np.mean(AR_b), np.float64)
+assert_type(np.mean(AR_i8), np.float64)
+assert_type(np.mean(AR_i8, axis=0), npt.NDArray[np.float64])
+assert_type(np.mean(AR_i8, keepdims=True), npt.NDArray[np.float64])
+assert_type(np.mean(AR_i8, axis=0, keepdims=True), npt.NDArray[np.float64])
+assert_type(np.mean(AR_f4), np.float32)
+assert_type(np.mean(AR_c16), np.complex128)
+assert_type(np.mean(AR_O), np.float64)
+assert_type(np.mean(AR_O, axis=0), npt.NDArray[np.object_])
+assert_type(np.mean(AR_O, keepdims=True), npt.NDArray[np.object_])
+assert_type(np.mean(AR_O, axis=0, keepdims=True), npt.NDArray[np.object_])
+assert_type(np.mean(AR_m_ns), np.timedelta64[int])
+assert_type(np.mean(AR_m_s), np.timedelta64[dt.timedelta])
+assert_type(np.mean(AR_m_nat), np.timedelta64[None])
+assert_type(np.mean(AR_f4, axis=0), npt.NDArray[np.float32])
+assert_type(np.mean(AR_f4, keepdims=True), npt.NDArray[np.float32])
+assert_type(np.mean(AR_f4_1d, keepdims=True), np.ndarray[tuple[int], np.dtype[np.float32]])
+assert_type(np.mean(AR_f4_2d, keepdims=True), np.ndarray[tuple[int, int], np.dtype[np.float32]])
 assert_type(np.mean(AR_f4, dtype=float), Any)
+assert_type(np.mean(AR_f4, dtype=float, axis=1), np.ndarray)
+assert_type(np.mean(AR_f4, dtype=float, keepdims=True), np.ndarray)
+assert_type(np.mean(AR_f4, dtype=float, axis=1, keepdims=True), np.ndarray)
 assert_type(np.mean(AR_f4, dtype=np.float64), np.float64)
-assert_type(np.mean(AR_f4, out=AR_subclass), NDArraySubclass)
 assert_type(np.mean(AR_f4, dtype=np.float64), np.float64)
-assert_type(np.mean(AR_f4, None, np.float64), np.float64)
 assert_type(np.mean(AR_f4, dtype=np.float64, keepdims=False), np.float64)
-assert_type(np.mean(AR_f4, None, np.float64, keepdims=False), np.float64)
-assert_type(np.mean(AR_f4, dtype=np.float64, keepdims=True), np.float64 | npt.NDArray[np.float64])
-assert_type(np.mean(AR_f4, None, np.float64, keepdims=True), np.float64 | npt.NDArray[np.float64])
+assert_type(np.mean(AR_f4, dtype=np.float64, keepdims=True), npt.NDArray[np.float64])
+assert_type(np.mean(AR_f4_1d, dtype=np.float64, keepdims=True), np.ndarray[tuple[int], np.dtype[np.float64]])
+assert_type(np.mean(AR_f4_2d, dtype=np.float64, keepdims=True), np.ndarray[tuple[int, int], np.dtype[np.float64]])
+assert_type(np.mean(AR_f4, out=AR_subclass), NDArraySubclass)
 
 assert_type(np.std(AR_b), np.floating)
 assert_type(np.std(AR_i8), np.floating)

@@ -2038,21 +2038,6 @@ class MaskedArray(ndarray[_ShapeT_co, _DTypeT_co]):
         keepdims: bool | _NoValueType = ...,
     ) -> ArrayT: ...
 
-    # Keep in sync with `ndarray.cumsum` and `ma.core.cumsum`
-    @overload  # out: None (default)
-    def cumsum(self, /, axis: SupportsIndex | None = None, dtype: DTypeLike | None = None, out: None = None) -> MaskedArray: ...
-    @overload  # out: ndarray
-    def cumsum[ArrayT: np.ndarray](self, /, axis: SupportsIndex | None, dtype: DTypeLike | None, out: ArrayT) -> ArrayT: ...
-    @overload
-    def cumsum[ArrayT: np.ndarray](
-        self,
-        /,
-        axis: SupportsIndex | None = None,
-        dtype: DTypeLike | None = None,
-        *,
-        out: ArrayT,
-    ) -> ArrayT: ...
-
     # Keep in sync with `ma.core.prod`
     @overload  # type: ignore[override]
     def prod(
@@ -2085,15 +2070,180 @@ class MaskedArray(ndarray[_ShapeT_co, _DTypeT_co]):
 
     product = prod
 
-    # Keep in sync with `ndarray.cumprod` and `ma.core.cumprod`
-    @overload  # out: None (default)
-    def cumprod(self, /, axis: SupportsIndex | None = None, dtype: DTypeLike | None = None, out: None = None) -> MaskedArray: ...
-    @overload  # out: ndarray
-    def cumprod[ArrayT: np.ndarray](self, /, axis: SupportsIndex | None, dtype: DTypeLike | None, out: ArrayT) -> ArrayT: ...
+    # Keep in sync with `ndarray.cumprod`
+    @override  # type: ignore[override]
     @overload
-    def cumprod[ArrayT: np.ndarray](
-        self,
-        /,
+    def cumprod[DTypeT: dtype[number | object_]](
+        self: MaskedArray[Any, DTypeT],
+        axis: None = None,
+        dtype: None = None,
+        out: None = None,
+    ) -> MaskedArray[tuple[int], DTypeT]: ...
+    @overload  # bool_
+    def cumprod(
+        self: _MaskedArray[np.bool],
+        axis: None = None,
+        dtype: None = None,
+        out: None = None,
+    ) -> _Masked1D[np.int_]: ...
+    @overload  # dtype: <known>  (keyword)
+    def cumprod[ScalarT: np.generic](
+        self: _MaskedArray[number | bool_ | object_],
+        axis: None = None,
+        *,
+        dtype: _DTypeLike[ScalarT],
+        out: None = None,
+    ) -> _Masked1D[ScalarT]: ...
+    @overload  # dtype: <unknown>  (keyword)
+    def cumprod(
+        self: _MaskedArray[number | bool_ | object_],
+        axis: None = None,
+        *,
+        dtype: DTypeLike,
+        out: None = None,
+    ) -> _Masked1D[Any]: ...
+    @overload  # dtype: <known>  (positional)
+    def cumprod[ScalarT: np.generic](
+        self: _MaskedArray[number | bool_ | object_],
+        axis: None,
+        dtype: _DTypeLike[ScalarT],
+        out: None = None,
+    ) -> _Masked1D[ScalarT]: ...
+    @overload  # dtype: <unknown>  (positional)
+    def cumprod(
+        self: _MaskedArray[number | bool_ | object_],
+        axis: None,
+        dtype: DTypeLike,
+        out: None = None,
+    ) -> _Masked1D[Any]: ...
+    @overload  # axis: <given>
+    def cumprod[ArrayT: _MaskedArray[number | object_]](
+        self: ArrayT,
+        axis: SupportsIndex,
+        dtype: None = None,
+        out: None = None,
+    ) -> ArrayT: ...
+    @overload  # bool_, axis: <given>
+    def cumprod[ShapeT: _Shape](
+        self: MaskedArray[ShapeT, np.dtype[np.bool]],
+        axis: SupportsIndex,
+        dtype: None = None,
+        out: None = None,
+    ) -> MaskedArray[ShapeT, np.dtype[np.int_]]: ...
+    @overload  # axis: <given>, dtype: <known>
+    def cumprod[ShapeT: _Shape, ScalarT: np.generic](
+        self: MaskedArray[ShapeT, dtype[number | bool_ | object_]],
+        axis: SupportsIndex,
+        dtype: _DTypeLike[ScalarT],
+        out: None = None,
+    ) -> MaskedArray[ShapeT, dtype[ScalarT]]: ...
+    @overload  # axis: <given>, dtype: <unknown>
+    def cumprod[ShapeT: _Shape](
+        self: MaskedArray[ShapeT, dtype[number | bool_ | object_]],
+        axis: SupportsIndex,
+        dtype: DTypeLike,
+        out: None = None,
+    ) -> MaskedArray[ShapeT]: ...
+    @overload  # out: ndarray
+    def cumprod[ArrayT: ndarray](
+        self: _MaskedArray[number | bool_ | object_],
+        axis: SupportsIndex | None,
+        dtype: DTypeLike | None,
+        out: ArrayT,
+    ) -> ArrayT: ...
+    @overload
+    def cumprod[ArrayT: ndarray](  # pyright: ignore[reportIncompatibleMethodOverride]
+        self: _MaskedArray[number | bool_ | object_],
+        axis: SupportsIndex | None = None,
+        dtype: DTypeLike | None = None,
+        *,
+        out: ArrayT,
+    ) -> ArrayT: ...
+
+    # Keep in sync with `ndarray.cumsum`
+    @override  # type: ignore[override]
+    @overload
+    def cumsum[DTypeT: dtype[number | timedelta64 | object_]](
+        self: MaskedArray[Any, DTypeT],
+        axis: None = None,
+        dtype: None = None,
+        out: None = None,
+    ) -> MaskedArray[tuple[int], DTypeT]: ...
+    @overload  # bool_
+    def cumsum(
+        self: _MaskedArray[np.bool],
+        axis: None = None,
+        dtype: None = None,
+        out: None = None,
+    ) -> _Masked1D[np.int_]: ...
+    @overload  # dtype: <known>  (keyword)
+    def cumsum[ScalarT: np.generic](
+        self: _MaskedArray[number | bool_ | timedelta64 | object_],
+        axis: None = None,
+        *,
+        dtype: _DTypeLike[ScalarT],
+        out: None = None,
+    ) -> _Masked1D[ScalarT]: ...
+    @overload  # dtype: <unknown>  (keyword)
+    def cumsum(
+        self: _MaskedArray[number | bool_ | timedelta64 | object_],
+        axis: None = None,
+        *,
+        dtype: DTypeLike,
+        out: None = None,
+    ) -> _Masked1D[Any]: ...
+    @overload  # dtype: <known>  (positional)
+    def cumsum[ScalarT: np.generic](
+        self: _MaskedArray[number | bool_ | timedelta64 | object_],
+        axis: None,
+        dtype: _DTypeLike[ScalarT],
+        out: None = None,
+    ) -> _Masked1D[ScalarT]: ...
+    @overload  # dtype: <unknown>  (positional)
+    def cumsum(
+        self: _MaskedArray[number | bool_ | timedelta64 | object_],
+        axis: None,
+        dtype: DTypeLike,
+        out: None = None,
+    ) -> _Masked1D[Any]: ...
+    @overload  # axis: <given>
+    def cumsum[ArrayT: _MaskedArray[number | timedelta64 | object_]](
+        self: ArrayT,
+        axis: SupportsIndex,
+        dtype: None = None,
+        out: None = None,
+    ) -> ArrayT: ...
+    @overload  # bool_, axis: <given>
+    def cumsum[ShapeT: _Shape](
+        self: MaskedArray[ShapeT, np.dtype[np.bool]],
+        axis: SupportsIndex,
+        dtype: None = None,
+        out: None = None,
+    ) -> MaskedArray[ShapeT, np.dtype[np.int_]]: ...
+    @overload  # axis: <given>, dtype: <known>
+    def cumsum[ShapeT: _Shape, ScalarT: np.generic](
+        self: MaskedArray[ShapeT, dtype[number | bool_ | timedelta64 | object_]],
+        axis: SupportsIndex,
+        dtype: _DTypeLike[ScalarT],
+        out: None = None,
+    ) -> MaskedArray[ShapeT, dtype[ScalarT]]: ...
+    @overload  # axis: <given>, dtype: <unknown>
+    def cumsum[ShapeT: _Shape](
+        self: MaskedArray[ShapeT, dtype[number | bool_ | timedelta64 | object_]],
+        axis: SupportsIndex,
+        dtype: DTypeLike,
+        out: None = None,
+    ) -> MaskedArray[ShapeT]: ...
+    @overload  # out: ndarray
+    def cumsum[ArrayT: ndarray](
+        self: _MaskedArray[number | bool_ | timedelta64 | object_],
+        axis: SupportsIndex | None,
+        dtype: DTypeLike | None,
+        out: ArrayT,
+    ) -> ArrayT: ...
+    @overload
+    def cumsum[ArrayT: ndarray](  # pyright: ignore[reportIncompatibleMethodOverride]
+        self: _MaskedArray[number | bool_ | timedelta64 | object_],
         axis: SupportsIndex | None = None,
         dtype: DTypeLike | None = None,
         *,
@@ -2222,9 +2372,10 @@ class MaskedArray(ndarray[_ShapeT_co, _DTypeT_co]):
         stable: bool = False,
     ) -> _MaskedArray[intp]: ...
 
-    # Keep in-sync with np.ma.argmin
-    @overload  # type: ignore[override]
-    def argmin(  # pyrefly: ignore[bad-param-name-override]
+    # keep in sync with `MaskedArray.argmin` (below) and `ndarray.argmax`
+    @override  # type: ignore[override]
+    @overload
+    def argmax(
         self,
         axis: None = None,
         fill_value: _ScalarLike_co | None = None,
@@ -2232,17 +2383,26 @@ class MaskedArray(ndarray[_ShapeT_co, _DTypeT_co]):
         *,
         keepdims: Literal[False] | _NoValueType = ...,
     ) -> intp: ...
-    @overload
-    def argmin(
+    @overload  # axis: <given>
+    def argmax(
+        self,
+        axis: SupportsIndex,
+        fill_value: _ScalarLike_co | None = None,
+        out: None = None,
+        *,
+        keepdims: Literal[False] | _NoValueType = ...,
+    ) -> _MaskedArray[intp]: ...
+    @overload  # keepdims: True
+    def argmax(
         self,
         axis: SupportsIndex | None = None,
         fill_value: _ScalarLike_co | None = None,
         out: None = None,
         *,
-        keepdims: bool | _NoValueType = ...,
-    ) -> Any: ...
-    @overload
-    def argmin[ArrayT: np.ndarray](
+        keepdims: Literal[True],
+    ) -> MaskedArray[_ShapeT_co, dtype[intp]]: ...
+    @overload  # out: <given>  (keyword)
+    def argmax[ArrayT: NDArray[intp]](
         self,
         axis: SupportsIndex | None = None,
         fill_value: _ScalarLike_co | None = None,
@@ -2250,8 +2410,8 @@ class MaskedArray(ndarray[_ShapeT_co, _DTypeT_co]):
         out: ArrayT,
         keepdims: bool | _NoValueType = ...,
     ) -> ArrayT: ...
-    @overload
-    def argmin[ArrayT: np.ndarray](
+    @overload  # out: <given>  (positional)
+    def argmax[ArrayT: NDArray[intp]](  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         axis: SupportsIndex | None,
         fill_value: _ScalarLike_co | None,
@@ -2260,9 +2420,10 @@ class MaskedArray(ndarray[_ShapeT_co, _DTypeT_co]):
         keepdims: bool | _NoValueType = ...,
     ) -> ArrayT: ...
 
-    # Keep in-sync with np.ma.argmax
-    @overload  # type: ignore[override]
-    def argmax(  # pyrefly: ignore[bad-param-name-override]
+    # keep in sync with `MaskedArray.argmax` (above) and `ndarray.argmin`
+    @override  # type: ignore[override]
+    @overload
+    def argmin(
         self,
         axis: None = None,
         fill_value: _ScalarLike_co | None = None,
@@ -2270,17 +2431,26 @@ class MaskedArray(ndarray[_ShapeT_co, _DTypeT_co]):
         *,
         keepdims: Literal[False] | _NoValueType = ...,
     ) -> intp: ...
-    @overload
-    def argmax(
+    @overload  # axis: <given>
+    def argmin(
+        self,
+        axis: SupportsIndex,
+        fill_value: _ScalarLike_co | None = None,
+        out: None = None,
+        *,
+        keepdims: Literal[False] | _NoValueType = ...,
+    ) -> _MaskedArray[intp]: ...
+    @overload  # keepdims: True
+    def argmin(
         self,
         axis: SupportsIndex | None = None,
         fill_value: _ScalarLike_co | None = None,
         out: None = None,
         *,
-        keepdims: bool | _NoValueType = ...,
-    ) -> Any: ...
-    @overload
-    def argmax[ArrayT: np.ndarray](
+        keepdims: Literal[True],
+    ) -> MaskedArray[_ShapeT_co, dtype[intp]]: ...
+    @overload  # out: <given>  (keyword)
+    def argmin[ArrayT: NDArray[intp]](
         self,
         axis: SupportsIndex | None = None,
         fill_value: _ScalarLike_co | None = None,
@@ -2288,8 +2458,8 @@ class MaskedArray(ndarray[_ShapeT_co, _DTypeT_co]):
         out: ArrayT,
         keepdims: bool | _NoValueType = ...,
     ) -> ArrayT: ...
-    @overload
-    def argmax[ArrayT: np.ndarray](
+    @overload  # out: <given>  (positional)
+    def argmin[ArrayT: NDArray[intp]](  # pyright: ignore[reportIncompatibleMethodOverride]
         self,
         axis: SupportsIndex | None,
         fill_value: _ScalarLike_co | None,
@@ -2511,9 +2681,30 @@ class MaskedArray(ndarray[_ShapeT_co, _DTypeT_co]):
 
     # keep in sync with `ndarray.diagonal`
     @override
+    @overload  # ?d  (workaround)
+    def diagonal[DTypeT: dtype](
+        self: MaskedArray[tuple[Never, Never, Never, Never], DTypeT],
+        offset: SupportsIndex = 0,
+        axis1: SupportsIndex = 0,
+        axis2: SupportsIndex = 1,
+    ) -> MaskedArray[_AnyShape, DTypeT]: ...
+    @overload  # 2d
+    def diagonal[DTypeT: dtype](
+        self: MaskedArray[tuple[int, int], DTypeT],
+        offset: SupportsIndex = 0,
+        axis1: SupportsIndex = 0,
+        axis2: SupportsIndex = 1,
+    ) -> MaskedArray[tuple[int], DTypeT]: ...
+    @overload  # 3d
+    def diagonal[DTypeT: dtype](
+        self: MaskedArray[tuple[int, int, int], DTypeT],
+        offset: SupportsIndex = 0,
+        axis1: SupportsIndex = 0,
+        axis2: SupportsIndex = 1,
+    ) -> MaskedArray[tuple[int, int], DTypeT]: ...
+    @overload  # Nd  (fallback)
     def diagonal(
         self,
-        /,
         offset: SupportsIndex = 0,
         axis1: SupportsIndex = 0,
         axis2: SupportsIndex = 1,

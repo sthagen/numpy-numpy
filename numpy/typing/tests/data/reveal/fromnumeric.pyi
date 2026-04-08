@@ -31,6 +31,10 @@ f4: np.float32
 i8: np.int64
 f: float
 
+_py_list_1d: list[int]
+_py_list_2d: list[list[int]]
+_py_list_3d: list[list[list[int]]]
+
 _dtype_list: list[np.dtype]
 _any_list: list[Any]
 
@@ -184,7 +188,10 @@ assert_type(np.shape(b), tuple[()])
 assert_type(np.shape(f), tuple[()])
 assert_type(np.shape([1]), tuple[int])
 assert_type(np.shape([[2]]), tuple[int, int])
-assert_type(np.shape([[[3]]]), tuple[Any, ...])
+assert_type(np.shape([[[3]]]), tuple[int, int, int])
+assert_type(np.shape(_py_list_1d), tuple[int])
+assert_type(np.shape(_py_list_2d), tuple[int, int])
+assert_type(np.shape(_py_list_3d), tuple[int, int, int])
 assert_type(np.shape(AR_b), tuple[Any, ...])
 assert_type(np.shape(AR_nd), tuple[Any, ...])
 # these fail on mypy, but it works as expected with pyright/pylance
@@ -212,10 +219,13 @@ assert_type(np.all(f4), np.bool)
 assert_type(np.all(f), np.bool)
 assert_type(np.all(AR_b), np.bool)
 assert_type(np.all(AR_f4), np.bool)
-assert_type(np.all(AR_b, axis=0), Any)
-assert_type(np.all(AR_f4, axis=0), Any)
-assert_type(np.all(AR_b, keepdims=True), Any)
-assert_type(np.all(AR_f4, keepdims=True), Any)
+assert_type(np.all(AR_b, axis=0), npt.NDArray[np.bool])
+assert_type(np.all(AR_f4, axis=0), npt.NDArray[np.bool])
+assert_type(np.all(AR_b, keepdims=True), npt.NDArray[np.bool])
+assert_type(np.all(AR_f4, keepdims=True), npt.NDArray[np.bool])
+assert_type(np.all(AR_f4_1d, keepdims=True), np.ndarray[tuple[int], np.dtype[np.bool]])
+assert_type(np.all(AR_f4_2d, keepdims=True), np.ndarray[tuple[int, int], np.dtype[np.bool]])
+assert_type(np.all(AR_f4_3d, keepdims=True), np.ndarray[tuple[int, int, int], np.dtype[np.bool]])
 assert_type(np.all(AR_f4, out=AR_subclass), NDArraySubclass)
 
 assert_type(np.any(b), np.bool)
@@ -223,10 +233,13 @@ assert_type(np.any(f4), np.bool)
 assert_type(np.any(f), np.bool)
 assert_type(np.any(AR_b), np.bool)
 assert_type(np.any(AR_f4), np.bool)
-assert_type(np.any(AR_b, axis=0), Any)
-assert_type(np.any(AR_f4, axis=0), Any)
-assert_type(np.any(AR_b, keepdims=True), Any)
-assert_type(np.any(AR_f4, keepdims=True), Any)
+assert_type(np.any(AR_b, axis=0), npt.NDArray[np.bool])
+assert_type(np.any(AR_f4, axis=0), npt.NDArray[np.bool])
+assert_type(np.any(AR_b, keepdims=True), npt.NDArray[np.bool])
+assert_type(np.any(AR_f4, keepdims=True), npt.NDArray[np.bool])
+assert_type(np.any(AR_f4_1d, keepdims=True), np.ndarray[tuple[int], np.dtype[np.bool]])
+assert_type(np.any(AR_f4_2d, keepdims=True), np.ndarray[tuple[int, int], np.dtype[np.bool]])
+assert_type(np.any(AR_f4_3d, keepdims=True), np.ndarray[tuple[int, int, int], np.dtype[np.bool]])
 assert_type(np.any(AR_f4, out=AR_subclass), NDArraySubclass)
 
 assert_type(np.cumsum(b), np.ndarray[tuple[int], np.dtype[np.bool]])

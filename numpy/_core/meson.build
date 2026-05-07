@@ -51,8 +51,8 @@ C_ABI_VERSION = '0x02000000'
 # 0x00000013 - 2.2.x
 # 0x00000014 - 2.3.x
 # 0x00000015 - 2.4.x
-# 0x00000015 - 2.5.x
-C_API_VERSION = '0x00000015'
+# 0x00000016 - 2.5.x
+C_API_VERSION = '0x00000016'
 
 # Check whether we have a mismatch between the set C API VERSION and the
 # actual C API VERSION. Will raise a MismatchCAPIError if so.
@@ -464,6 +464,8 @@ optional_intrinsics = [
   ['__builtin_expect', '5, 0', [], []],
   # Test `long long` for arm+clang 13 (gh-22811, but we use all versions):
   ['__builtin_mul_overflow', '(long long)5, 5, (int*)5', [], []],
+  ['__builtin_add_overflow', '(long long)5, 5, (int*)5', [], []],
+  ['__builtin_sub_overflow', '(long long)5, 5, (int*)5', [], []],
   ['__builtin_prefetch', '(float*)0, 0, 3', [], []],
 ]
 foreach intrin: optional_intrinsics

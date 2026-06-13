@@ -439,6 +439,9 @@ PyArray_PutTo(PyArrayObject *self, PyObject* values0, PyObject *indices0,
         Py_INCREF(PyArray_DESCR(self));
         obj = (PyArrayObject *)PyArray_FromArray(self,
                                                  PyArray_DESCR(self), flags);
+        if (obj == NULL) {
+            goto fail;
+        }
         copied = 1;
         assert(self != obj);
         self = obj;
@@ -732,6 +735,9 @@ PyArray_PutMask(PyArrayObject *self, PyObject* values0, PyObject* mask0)
         dtype = PyArray_DESCR(self);
         Py_INCREF(dtype);
         obj = (PyArrayObject *)PyArray_FromArray(self, dtype, flags);
+        if (obj == NULL) {
+            goto fail;
+        }
         if (obj != self) {
             copied = 1;
         }
@@ -1717,8 +1723,14 @@ PyArray_Partition(PyArrayObject *op, PyArrayObject * ktharray, int axis,
     part = get_partition_func(PyArray_TYPE(op), which);
     if (part == NULL) {
         /* Use sorting, slower but equivalent */
-        if (PyDataType_GetArrFuncs(PyArray_DESCR(op))->compare) {
+        if ((PyDataType_GetArrFuncs(PyArray_DESCR(op))->compare)
+            && !(which & NPY_SELECT_DESCENDING)) { // TODO: descending sorts for partition
             sort = npy_quicksort;
+        }
+        else if (which & NPY_SELECT_DESCENDING) {
+            PyErr_SetString(PyExc_TypeError,
+                            "type does not support descending partition");
+            return -1;
         }
         else {
             PyErr_SetString(PyExc_TypeError,
@@ -1767,8 +1779,14 @@ PyArray_ArgPartition(PyArrayObject *op, PyArrayObject *ktharray, int axis,
     argpart = get_argpartition_func(PyArray_TYPE(op), which);
     if (argpart == NULL) {
         /* Use sorting, slower but equivalent */
-        if (PyDataType_GetArrFuncs(PyArray_DESCR(op))->compare) {
+        if ((PyDataType_GetArrFuncs(PyArray_DESCR(op))->compare) &&
+            !(which & NPY_SELECT_DESCENDING)) { // TODO: descending sorts for partition
             argsort = npy_aquicksort;
+        }
+        else if (which & NPY_SELECT_DESCENDING) {
+            PyErr_SetString(PyExc_TypeError,
+                            "type does not support descending partition");
+            return NULL;
         }
         else {
             PyErr_SetString(PyExc_TypeError,

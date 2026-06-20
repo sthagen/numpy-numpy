@@ -1,5 +1,7 @@
+import bisect
 import copy
 import itertools
+import operator
 import os
 import pickle
 import string
@@ -166,6 +168,61 @@ def test_null_roundtripping():
     assert data[1] == arr[1]
 
 
+@pytest.mark.parametrize(
+    "op, pyop",
+    [
+        (np.equal, operator.eq),
+        (np.not_equal, operator.ne),
+        (np.greater, operator.gt),
+        (np.greater_equal, operator.ge),
+        (np.less, operator.lt),
+        (np.less_equal, operator.le),
+    ],
+)
+def test_embedded_null_comparisons(op, pyop):
+    lhs = ["a\0b", "a\0b", "a\0c", "\0b", "long\0b"]
+    rhs = ["a\0c", "a\0b", "a\0b", "\0a", "long\0c"]
+
+    expected = [pyop(left, right) for left, right in zip(lhs, rhs)]
+    result = op(np.array(lhs, dtype="T"), np.array(rhs, dtype="T"))
+
+    assert result.tolist() == expected
+
+
+def test_embedded_null_sorting_and_search():
+    values = [
+        "a\0c",
+        "a\0b",
+        "a",
+        "\0b",
+        "\0a",
+        "long prefix\0c",
+        "long prefix\0b",
+    ]
+    expected_sorted = sorted(values)
+
+    arr = np.array(values, dtype="T")
+    assert np.sort(arr).tolist() == expected_sorted
+    assert arr[np.argsort(arr)].tolist() == expected_sorted
+    assert np.minimum(arr[:2], arr[1::-1]).tolist() == ["a\0b", "a\0b"]
+    assert np.maximum(arr[:2], arr[1::-1]).tolist() == ["a\0c", "a\0c"]
+
+    haystack = np.array(expected_sorted, dtype="T")
+    needles = ["\0b", "a\0c", "long prefix\0b"]
+    expected = [bisect.bisect_left(expected_sorted, needle) for needle in needles]
+    result = np.searchsorted(haystack, np.array(needles, dtype="T"))
+    assert result.tolist() == expected
+
+
+@pytest.mark.parametrize("dtype", [object, "U20", "S20", "V20"])
+def test_embedded_null_string_like_casts(dtype):
+    strings = ["a\0b", "\0leading", "multi\0null\0inside"]
+    arr = np.array(strings, dtype="T")
+    roundtripped = arr.astype(dtype).astype("T")
+
+    assert roundtripped.tolist() == strings
+
+
 def test_string_too_large_error():
     arr = np.array(["a", "b", "c"], dtype=StringDType())
     with pytest.raises(OverflowError):
@@ -315,6 +372,30 @@ def test_additional_unicode_cast(dtype):
     assert_array_equal(arr, arr.astype(arr.dtype))
     # tests the casts via the comparison promoter
     assert_array_equal(arr, arr.astype(string_list.dtype))
+
+
+@pytest.mark.parametrize(
+    "dtype",
+    [
+        "int64",
+        "float16",
+        "float32",
+        "float64",
+        "longdouble",
+        "complex64",
+        "complex128",
+        "clongdouble",
+    ],
+)
+@pytest.mark.parametrize(
+    "invalid",
+    ["", "spam", "1abc", "1.0abc", "\0", "1\0", "1\0abc"],
+)
+def test_invalid_numeric_casts_error(dtype, invalid):
+    arr = np.array([invalid], dtype="T")
+
+    with pytest.raises(ValueError):
+        arr.astype(dtype)
 
 
 def test_insert_scalar(dtype, string_list):
@@ -836,6 +917,19 @@ def test_cfloat_casts(typename):
     res = sres.astype(typename)
     assert_array_equal(np.array(inp, dtype=typename), res)
     assert sres[0] == "(0.1+0.1j)"
+
+
+@pytest.mark.parametrize("typename", ["csingle", "cdouble", "clongdouble"])
+def test_string_to_cfloat_cast_distinct_components(typename):
+    inp = np.array(
+        ["1.25+0.5j", "2.75-3.5j", "-3.125+4.25j", "27000-8j"],
+        dtype="T",
+    )
+    expected = np.array(
+        [1.25 + 0.5j, 2.75 - 3.5j, -3.125 + 4.25j, 2.7e4 - 8j],
+        dtype=typename,
+    )
+    assert_array_equal(inp.astype(typename), expected)
 
 
 def test_take(string_list):
@@ -1575,6 +1669,33 @@ def test_replace_non_default_repeat(count):
     a = np.array(["🐍--", "🦜-🦜-"], "T")
     result = np.strings.replace(a, "🦜-", "🦜†", count)
     assert_array_equal(result, np.array(["🐍--", "🦜†🦜†"], "T"))
+
+
+def test_trailing_null_is_not_padding():
+    arr = np.array(["x\0", "\0", "x\0y\0", "abc"], dtype=StringDType())
+    nul = np.array("\0", dtype=StringDType())
+
+    assert_array_equal(np.strings.str_len(arr), [2, 1, 4, 3])
+    assert_array_equal(np.strings.find(arr, nul), [1, 0, 1, -1])
+    assert_array_equal(np.strings.rfind(arr, nul), [1, 0, 3, -1])
+    assert_array_equal(np.strings.count(arr, nul), [1, 1, 2, 0])
+    assert_array_equal(np.strings.endswith(arr, nul),
+                       [True, True, True, False])
+    assert_array_equal(np.strings.slice(arr, -1, None),
+                       np.array(["\0", "\0", "\0", "c"],
+                                dtype=StringDType()))
+
+
+def test_trailing_null_is_not_stripped_as_whitespace():
+    arr = np.array(["x\0", "\0 ", " \0", "x\0 \t"],
+                   dtype=StringDType())
+
+    assert_array_equal(
+            np.strings.rstrip(arr),
+            np.array(["x\0", "\0", " \0", "x\0"], dtype=StringDType()))
+    assert_array_equal(
+            np.strings.strip(arr),
+            np.array(["x\0", "\0", "\0", "x\0"], dtype=StringDType()))
 
 
 def test_strip_ljust_rjust_consistency(string_array, unicode_array):

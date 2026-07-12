@@ -5489,11 +5489,13 @@ PyUFunc_RegisterLoopForType(PyUFuncObject *ufunc,
 #undef _SETCPTR
 
 #undef _PyUFuncObject_GET_ITEM_DATA
+static_assert(NPY_ALIGNOF(PyUFuncObject_fields) <= 8,
+              "PyUFuncObject must not require more than 8-byte alignment");
 /*UFUNC_API*/
 NPY_NO_EXPORT PyUFuncObject_fields *
 _PyUFuncObject_GET_ITEM_DATA(const PyUFuncObject *obj)
 {
-    return (PyUFuncObject_fields *)((char *)obj + sizeof(PyObject));
+    return (PyUFuncObject_fields *)((char *)obj + offsetof(PyUFuncObject_fields, nin));
 }
 
 static void
@@ -6423,8 +6425,8 @@ py_resolve_dtypes_generic(PyUFuncObject *ufunc, npy_bool return_context,
             DTypes[i] = NPY_DTYPE(descr);
             Py_INCREF(DTypes[i]);
         }
-         /* Explicitly allow int, float, and complex for the "weak" types. */
-        else if (descr_obj == (PyObject *)&PyLong_Type) {
+        /* Explicitly allow int, float, and complex for the "weak" types. */
+        else if (descr_obj == (PyObject *)&PyLong_Type && i < ufunc -> nin) {
             descr = PyArray_DescrFromType(NPY_INTP);
             dummy_arrays[i] = (PyArrayObject *)PyArray_Empty(0, NULL, descr, 0);
             if (dummy_arrays[i] == NULL) {
@@ -6435,7 +6437,7 @@ py_resolve_dtypes_generic(PyUFuncObject *ufunc, npy_bool return_context,
             DTypes[i] = &PyArray_PyLongDType;
             promoting_pyscalars = NPY_TRUE;
         }
-        else if (descr_obj == (PyObject *)&PyFloat_Type) {
+        else if (descr_obj == (PyObject *)&PyFloat_Type && i < ufunc -> nin) {
             descr = PyArray_DescrFromType(NPY_DOUBLE);
             dummy_arrays[i] = (PyArrayObject *)PyArray_Empty(0, NULL, descr, 0);
             if (dummy_arrays[i] == NULL) {
@@ -6446,7 +6448,7 @@ py_resolve_dtypes_generic(PyUFuncObject *ufunc, npy_bool return_context,
             DTypes[i] = &PyArray_PyFloatDType;
             promoting_pyscalars = NPY_TRUE;
         }
-        else if (descr_obj == (PyObject *)&PyComplex_Type) {
+        else if (descr_obj == (PyObject *)&PyComplex_Type && i < ufunc -> nin) {
             descr = PyArray_DescrFromType(NPY_CDOUBLE);
             dummy_arrays[i] = (PyArrayObject *)PyArray_Empty(0, NULL, descr, 0);
             if (dummy_arrays[i] == NULL) {
@@ -6464,6 +6466,11 @@ py_resolve_dtypes_generic(PyUFuncObject *ufunc, npy_bool return_context,
                         "(except the first one in reductions)");
                 goto finish;
             }
+        }
+        else if (i >= ufunc -> nin) {
+            PyErr_SetString(PyExc_TypeError,
+                    "Output descriptors must be NumPy dtypes or None.");
+            goto finish;
         }
         else {
             PyErr_SetString(PyExc_TypeError,

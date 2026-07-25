@@ -107,7 +107,6 @@ from numpy._typing import (  # type: ignore[deprecated]
     _CharacterCodes,
     # Ufuncs
     _UFunc_Nin2_Nout1,
-    _UFunc_Nin2_Nout2,
     _GUFunc_Nin2_Nout1,
 )
 from numpy._typing._char_codes import (
@@ -392,7 +391,10 @@ from numpy._core.umath import (
     arctan2 as atan2,
     arctanh,
     arctanh as atanh,
+    bitwise_and,
     bitwise_count,
+    bitwise_or,
+    bitwise_xor,
     cbrt,
     ceil,
     conjugate,
@@ -403,13 +405,19 @@ from numpy._core.umath import (
     deg2rad,
     degrees,
     divide,
+    divide as true_divide,
+    divmod,
     equal,
     exp,
     exp2,
     expm1,
     fabs,
+    float_power,
     floor,
+    floor_divide,
+    fmod,
     frexp,
+    gcd,
     greater,
     greater_equal,
     heaviside,
@@ -421,7 +429,10 @@ from numpy._core.umath import (
     isinf,
     isnan,
     isnat,
+    lcm,
     ldexp,
+    left_shift,
+    left_shift as bitwise_left_shift,
     less,
     less_equal,
     log,
@@ -434,14 +445,20 @@ from numpy._core.umath import (
     logical_not,
     logical_or,
     logical_xor,
+    mod,
     modf,
     nextafter,
     not_equal,
     positive,
+    power,
+    power as pow,
     negative,
     rad2deg,
     radians,
     reciprocal,
+    remainder,
+    right_shift,
+    right_shift as bitwise_right_shift,
     rint,
     sign,
     signbit,
@@ -450,6 +467,7 @@ from numpy._core.umath import (
     spacing,
     square,
     sqrt,
+    subtract,
     tan,
     tanh,
     trunc,
@@ -7625,37 +7643,18 @@ class ufunc:
 
 # Parameters: `__name__`, `ntypes` and `identity`
 add: _UFunc_Nin2_Nout1[L["add"], L[22], L[0]]
-bitwise_and: _UFunc_Nin2_Nout1[L["bitwise_and"], L[12], L[-1]]
-bitwise_or: _UFunc_Nin2_Nout1[L["bitwise_or"], L[12], L[0]]
-bitwise_xor: _UFunc_Nin2_Nout1[L["bitwise_xor"], L[12], L[0]]
-divmod: _UFunc_Nin2_Nout2[L["divmod"], L[15], None]
-float_power: _UFunc_Nin2_Nout1[L["float_power"], L[4], None]
-floor_divide: _UFunc_Nin2_Nout1[L["floor_divide"], L[21], None]
 fmax: _UFunc_Nin2_Nout1[L["fmax"], L[21], None]
 fmin: _UFunc_Nin2_Nout1[L["fmin"], L[21], None]
-fmod: _UFunc_Nin2_Nout1[L["fmod"], L[15], None]
-gcd: _UFunc_Nin2_Nout1[L["gcd"], L[11], L[0]]
-lcm: _UFunc_Nin2_Nout1[L["lcm"], L[11], None]
-left_shift: _UFunc_Nin2_Nout1[L["left_shift"], L[11], None]
 matmul: _GUFunc_Nin2_Nout1[L["matmul"], L[19], None, L["(n?,k),(k,m?)->(n?,m?)"]]
 matvec: _GUFunc_Nin2_Nout1[L["matvec"], L[19], None, L["(m,n),(n)->(m)"]]
 maximum: _UFunc_Nin2_Nout1[L["maximum"], L[21], None]
 minimum: _UFunc_Nin2_Nout1[L["minimum"], L[21], None]
 multiply: _UFunc_Nin2_Nout1[L["multiply"], L[23], L[1]]
-power: _UFunc_Nin2_Nout1[L["power"], L[18], None]
-remainder: _UFunc_Nin2_Nout1[L["remainder"], L[16], None]
-right_shift: _UFunc_Nin2_Nout1[L["right_shift"], L[11], None]
-subtract: _UFunc_Nin2_Nout1[L["subtract"], L[21], None]
 vecdot: _GUFunc_Nin2_Nout1[L["vecdot"], L[19], None, L["(n),(n)->()"]]
 vecmat: _GUFunc_Nin2_Nout1[L["vecmat"], L[19], None, L["(n),(n,m)->(m)"]]
 
 concat = concatenate
-bitwise_left_shift = left_shift
-bitwise_right_shift = right_shift
-mod = remainder
 permute_dims = transpose
-pow = power
-true_divide = divide
 
 # TODO: The type of each `__next__` and `iters` return-type depends
 # on the length and dtype of `args`; we can't describe this behavior yet

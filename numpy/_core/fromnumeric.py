@@ -247,22 +247,22 @@ def top_k(a, k, /, *, axis=-1, mode="largest", sorted=True):
 
     Examples
     --------
-    >>> a = np.array([[1,2,3,4,5], [5,4,3,2,1]])
+    >>> a = np.array([[1,2,3,4], [4,3,2,1]])
     >>> np.top_k(a, 2)
-    (array([[5, 4],
-            [5, 4]]),
-     array([[4, 3],
+    (array([[4, 3],
+            [4, 3]]),
+     array([[3, 2],
             [0, 1]]))
     >>> np.top_k(a, 2, axis=0)
-    (array([[5, 4, 3, 4, 5],
-           [1, 2, 3, 2, 1]]),
-     array([[1, 1, 0, 0, 0],
-           [0, 0, 1, 1, 1]]))
+    (array([[4, 3, 3, 4],
+           [1, 2, 2, 1]]),
+     array([[1, 1, 0, 0],
+           [0, 0, 1, 1]]))
     >>> np.top_k(a, 2, axis=1, mode="smallest")
     (array([[1, 2],
             [1, 2]]),
      array([[0, 1],
-            [4, 3]]))
+            [3, 2]]))
     >>> np.top_k(np.array([1., 2., 3., np.nan]), 2)
     (array([3., 2.]), array([2, 1]))
     """
@@ -3472,6 +3472,8 @@ def minmax(a, axis=None, out=None, keepdims=np._NoValue, initial=np._NoValue,
 
     This is equivalent to ``(np.min(a, ...), np.max(a, ...))`` but computes
     both the minimum and the maximum in a single pass over `a`.
+
+    .. versionadded:: 2.6.0
 
     Parameters
     ----------

@@ -3,6 +3,7 @@ from collections.abc import Callable, Iterable, Sequence
 from typing import (
     Any,
     Concatenate,
+    Generic,
     Literal as L,
     Never,
     Protocol,
@@ -11,7 +12,7 @@ from typing import (
     overload,
     type_check_only,
 )
-from typing_extensions import TypeIs
+from typing_extensions import TypeIs, TypeVar
 
 import numpy as np
 from numpy import _OrderKACF
@@ -23,6 +24,7 @@ from numpy._typing import (
     NDArray,
     _ArrayLike,
     _ArrayLikeBool_co,
+    _ArrayLikeComplex128_co,
     _ArrayLikeComplex_co,
     _ArrayLikeFloat_co,
     _ArrayLikeInt_co,
@@ -80,9 +82,14 @@ __all__ = [
     "quantile",
 ]
 
+_ScalarT_co = TypeVar("_ScalarT_co", bound=np.generic, default=Any, covariant=True)
+_PyFuncT_co = TypeVar("_PyFuncT_co", bound=Callable[..., object] | _NoValueType, default=Callable[..., Any], covariant=True)
+
 type _ArrayLike1D[ScalarT: np.generic] = _SupportsArray[np.dtype[ScalarT]] | Sequence[ScalarT]
 
 type _integer_co = np.integer | np.bool
+type _int16_co = np.int8 | np.uint8 | np.int16
+type _uint16_co = np.uint8 | np.uint16
 type _float32_co = np.float32 | np.float16 | _integer_co
 type _float64_co = np.float64 | _integer_co
 type _floating_co = np.floating | _integer_co
@@ -125,6 +132,10 @@ type _ListSeqND[T] = list[T] | _SeqND[list[T]]
 
 type _ToArray1D[ScalarT: np.generic, T] = _Array1D[ScalarT] | _Seq1D[T]
 type _ToArrayND[ScalarT: np.generic, T] = _SupportsArray[np.dtype[ScalarT]] | _SeqND[_SupportsArray[np.dtype[ScalarT]] | T]
+
+type _Vectorize1[ScalarT: np.generic] = vectorize[ScalarT, Callable[[Any], object]]
+type _Vectorize2[ScalarT: np.generic] = vectorize[ScalarT, Callable[[Any, Any], object]]
+type _Vectorize3P[ScalarT: np.generic] = vectorize[ScalarT, Callable[Concatenate[Any, Any, Any, ...], object]]
 
 type _Tuple2[T] = tuple[T, T]
 type _Tuple3[T] = tuple[T, T, T]
@@ -179,26 +190,242 @@ class _SizedIterable[T](Protocol):
 
 ###
 
-class vectorize:
+class vectorize(Generic[_ScalarT_co, _PyFuncT_co]):
     __doc__: str | None
     __module__: L["numpy"] = "numpy"  # pyrefly: ignore[bad-override]
-    pyfunc: Callable[..., Incomplete]
+    pyfunc: Callable[..., Any]
     cache: bool
     signature: str | None
     otypes: str | None
     excluded: set[int | str]
 
+    @overload  # decorator
     def __init__(
-        self,
+        self: vectorize[Never, _NoValueType],
         /,
-        pyfunc: Callable[..., Incomplete] | _NoValueType = ...,  # = _NoValue
+        pyfunc: _NoValueType = ...,  # np._NoValue
+        *,
         otypes: str | Iterable[DTypeLike] | None = None,
         doc: str | None = None,
         excluded: Iterable[int | str] | None = None,
         cache: bool = False,
         signature: str | None = None,
     ) -> None: ...
-    def __call__(self, /, *args: Incomplete, **kwargs: Incomplete) -> Incomplete: ...
+    @overload  # signature=<given>
+    def __init__(
+        self: vectorize[Any, Callable[[], object]],
+        /,
+        pyfunc: Callable[..., object],
+        otypes: str | Iterable[DTypeLike] | None = None,
+        doc: str | None = None,
+        excluded: Iterable[int | str] | None = None,
+        cache: bool = False,
+        *,
+        signature: str,
+    ) -> None: ...
+    @overload  # otypes=<given>
+    def __init__[FuncT: Callable[..., object]](
+        self: vectorize[Any, FuncT],
+        /,
+        pyfunc: FuncT,
+        otypes: str | Iterable[DTypeLike],
+        doc: str | None = None,
+        excluded: Iterable[int | str] | None = None,
+        cache: bool = False,
+        signature: None = None,
+    ) -> None: ...
+    @overload  # T
+    def __init__[ScalarT: np.generic](
+        self: vectorize[ScalarT, Callable[..., ScalarT]],
+        /,
+        pyfunc: Callable[..., ScalarT],
+        otypes: None = None,
+        doc: str | None = None,
+        excluded: Iterable[int | str] | None = None,
+        cache: bool = False,
+        signature: None = None,
+    ) -> None: ...
+    @overload  # bool
+    def __init__[FuncT: Callable[..., bool]](
+        self: vectorize[np.bool, FuncT],
+        /,
+        pyfunc: FuncT,
+        otypes: None = None,
+        doc: str | None = None,
+        excluded: Iterable[int | str] | None = None,
+        cache: bool = False,
+        signature: None = None,
+    ) -> None: ...
+    @overload  # ~int
+    def __init__[FuncT: Callable[..., int]](
+        self: vectorize[np.int_, FuncT],
+        /,
+        pyfunc: FuncT,
+        otypes: None = None,
+        doc: str | None = None,
+        excluded: Iterable[int | str] | None = None,
+        cache: bool = False,
+        signature: None = None,
+    ) -> None: ...
+    @overload  # ~float
+    def __init__[FuncT: Callable[..., float]](
+        self: vectorize[np.float64, FuncT],
+        /,
+        pyfunc: FuncT,
+        otypes: None = None,
+        doc: str | None = None,
+        excluded: Iterable[int | str] | None = None,
+        cache: bool = False,
+        signature: None = None,
+    ) -> None: ...
+    @overload  # ~complex
+    def __init__[FuncT: Callable[..., complex]](
+        self: vectorize[np.complex128, FuncT],
+        /,
+        pyfunc: FuncT,
+        otypes: None = None,
+        doc: str | None = None,
+        excluded: Iterable[int | str] | None = None,
+        cache: bool = False,
+        signature: None = None,
+    ) -> None: ...
+    @overload  # ~str
+    def __init__[FuncT: Callable[..., str]](
+        self: vectorize[np.str_, FuncT],
+        /,
+        pyfunc: FuncT,
+        otypes: None = None,
+        doc: str | None = None,
+        excluded: Iterable[int | str] | None = None,
+        cache: bool = False,
+        signature: None = None,
+    ) -> None: ...
+    @overload  # ?
+    def __init__[FuncT: Callable[..., object]](
+        self: vectorize[Any, FuncT],
+        /,
+        pyfunc: FuncT,
+        otypes: None = None,
+        doc: str | None = None,
+        excluded: Iterable[int | str] | None = None,
+        cache: bool = False,
+        signature: None = None,
+    ) -> None: ...
+
+    #
+    @overload  # decorator
+    def __call__[FuncT: Callable[..., object]](
+        self: vectorize[Never, _NoValueType],
+        pyfunc: FuncT,
+        /,
+    ) -> vectorize[Any, FuncT]: ...
+    @overload  # 0d
+    def __call__[ScalarT: np.generic](
+        self: _Vectorize1[ScalarT],
+        x: _ScalarLike_co,
+        /,
+    ) -> _Array0D[ScalarT]: ...
+    @overload  # Nd
+    def __call__[ShapeT: _Shape, ScalarT: np.generic](
+        self: _Vectorize1[ScalarT],
+        x: np.ndarray[ShapeT],
+        /,
+    ) -> np.ndarray[ShapeT, np.dtype[ScalarT]]: ...
+    @overload  # 0d, 0d
+    def __call__[ScalarT: np.generic](
+        self: _Vectorize2[ScalarT],
+        x: _ScalarLike_co,
+        y: _ScalarLike_co,
+        /,
+    ) -> _Array0D[ScalarT]: ...
+    @overload  # Nd, 0d
+    def __call__[ShapeT: _Shape, ScalarT: np.generic](
+        self: _Vectorize2[ScalarT],
+        x: np.ndarray[ShapeT],
+        y: _ScalarLike_co,
+        /,
+    ) -> np.ndarray[ShapeT, np.dtype[ScalarT]]: ...
+    @overload  # 0d, Nd
+    def __call__[ShapeT: _Shape, ScalarT: np.generic](
+        self: _Vectorize2[ScalarT],
+        x: _ScalarLike_co,
+        y: np.ndarray[ShapeT],
+        /,
+    ) -> np.ndarray[ShapeT, np.dtype[ScalarT]]: ...
+    @overload  # ?d, ?d  (workaround)
+    def __call__[ScalarT: np.generic](
+        self: _Vectorize2[ScalarT],
+        x: _ArrayNoD[Any],
+        y: np.ndarray,
+        /,
+    ) -> NDArray[ScalarT]: ...
+    @overload  # ?d, ?d  (workaround)
+    def __call__[ScalarT: np.generic](
+        self: _Vectorize2[ScalarT],
+        x: np.ndarray,
+        y: _ArrayNoD[Any],
+        /,
+    ) -> NDArray[ScalarT]: ...
+    @overload  # 1d, 1d
+    def __call__[ScalarT: np.generic](
+        self: _Vectorize2[ScalarT],
+        x: _Array1D[Any],
+        y: _Array1D[Any],
+        /,
+    ) -> _Array1D[ScalarT]: ...
+    @overload  # 1d, 2d
+    def __call__[ScalarT: np.generic](
+        self: _Vectorize2[ScalarT],
+        x: _Array1D[Any],
+        y: _Array2D[Any],
+        /,
+    ) -> _Array2D[ScalarT]: ...
+    @overload  # 2d, <=2d
+    def __call__[ScalarT: np.generic](
+        self: _Vectorize2[ScalarT],
+        x: _Array2D[Any],
+        y: _ArrayMax2D[Any],
+        /,
+    ) -> _Array2D[ScalarT]: ...
+    @overload  # <=2d, 3d
+    def __call__[ScalarT: np.generic](
+        self: _Vectorize2[ScalarT],
+        x: _ArrayMax2D[Any],
+        y: _Array3D[Any],
+        /,
+    ) -> _Array3D[ScalarT]: ...
+    @overload  # 3d, <=3d
+    def __call__[ScalarT: np.generic](
+        self: _Vectorize2[ScalarT],
+        x: _Array3D[Any],
+        y: np.ndarray[tuple[int] | tuple[int, int] | tuple[int, int, int]],
+        /,
+    ) -> _Array3D[ScalarT]: ...
+    @overload  # 0d, 0d, 0d, *0d
+    def __call__[ScalarT: np.generic](
+        self: _Vectorize3P[ScalarT],
+        x: _ScalarLike_co,
+        y: _ScalarLike_co,
+        z: _ScalarLike_co,
+        /,
+        *args: _ScalarLike_co,
+    ) -> _Array0D[ScalarT]: ...
+    @overload  # 0d|Nd, 0d|Nd, 0d|Nd, *(0d|Nd)
+    def __call__[ShapeT: _Shape, ScalarT: np.generic](
+        self: _Vectorize3P[ScalarT],
+        x: np.ndarray[ShapeT] | _ScalarLike_co,
+        y: np.ndarray[ShapeT] | _ScalarLike_co,
+        z: np.ndarray[ShapeT] | _ScalarLike_co,
+        /,
+        *args: np.ndarray[ShapeT] | _ScalarLike_co,
+    ) -> np.ndarray[ShapeT, np.dtype[ScalarT]]: ...
+    @overload  # ?d  (fallback)
+    def __call__(
+        self: vectorize[Any, Callable[..., object]],
+        /,
+        *args: object,
+        **kwargs: object,
+    ) -> NDArray[Any]: ...
 
 @overload
 def rot90[ArrayT: np.ndarray](m: ArrayT, k: int = 1, axes: tuple[int, int] = (0, 1)) -> ArrayT: ...
@@ -209,39 +436,38 @@ def rot90(m: ArrayLike, k: int = 1, axes: tuple[int, int] = (0, 1)) -> NDArray[I
 
 # NOTE: Technically `flip` also accept scalars, but that has no effect and complicates
 # the overloads significantly, so we ignore that case here.
-@overload
+@overload  # Nd T
 def flip[ArrayT: np.ndarray](m: ArrayT, axis: int | tuple[int, ...] | None = None) -> ArrayT: ...
-@overload
+@overload  # 1d T
+def flip[ScalarT: np.generic](m: _Seq1D[ScalarT], axis: int | tuple[int, ...] | None = None) -> _Array1D[ScalarT]: ...
+@overload  # 1d bool
+def flip(m: _Seq1D[bool], axis: int | tuple[int, ...] | None = None) -> _Array1D[np.bool]: ...
+@overload  # 1d ~int
+def flip(m: list[int], axis: int | tuple[int, ...] | None = None) -> _Array1D[np.int_]: ...
+@overload  # 1d ~float
+def flip(m: list[float], axis: int | tuple[int, ...] | None = None) -> _Array1D[np.float64]: ...
+@overload  # 1d ~complex
+def flip(m: list[complex], axis: int | tuple[int, ...] | None = None) -> _Array1D[np.complex128]: ...
+@overload  # 2d T
+def flip[ScalarT: np.generic](m: _Seq2D[ScalarT], axis: int | tuple[int, ...] | None = None) -> _Array2D[ScalarT]: ...
+@overload  # 2d bool
+def flip(m: _Seq2D[bool], axis: int | tuple[int, ...] | None = None) -> _Array2D[np.bool]: ...
+@overload  # 2d ~int
+def flip(m: _Seq1D[list[int]], axis: int | tuple[int, ...] | None = None) -> _Array2D[np.int_]: ...
+@overload  # 2d ~float
+def flip(m: _Seq1D[list[float]], axis: int | tuple[int, ...] | None = None) -> _Array2D[np.float64]: ...
+@overload  # 2d ~complex
+def flip(m: _Seq1D[list[complex]], axis: int | tuple[int, ...] | None = None) -> _Array2D[np.complex128]: ...
+@overload  # ?d T
 def flip[ScalarT: np.generic](m: _ArrayLike[ScalarT], axis: int | tuple[int, ...] | None = None) -> NDArray[ScalarT]: ...
-@overload
-def flip(m: ArrayLike, axis: int | tuple[int, ...] | None = None) -> NDArray[Incomplete]: ...
+@overload  # ?d
+def flip(m: ArrayLike, axis: int | tuple[int, ...] | None = None) -> NDArray[Any]: ...
 
 #
 def iterable(y: object) -> TypeIs[Iterable[Any]]: ...
 
-# NOTE: This assumes that if `axis` is given the input is at least 2d, and will
-# therefore always return an array.
-# NOTE: This assumes that if `keepdims=True` the input is at least 1d, and will
-# therefore always return an array.
-@overload  # inexact array, keepdims=True
-def average[ArrayT: NDArray[np.inexact]](
-    a: ArrayT,
-    axis: int | tuple[int, ...] | None = None,
-    weights: _ArrayLikeNumber_co | None = None,
-    returned: L[False] = False,
-    *,
-    keepdims: L[True],
-) -> ArrayT: ...
-@overload  # inexact array, returned=True keepdims=True
-def average[ArrayT: NDArray[np.inexact]](
-    a: ArrayT,
-    axis: int | tuple[int, ...] | None = None,
-    weights: _ArrayLikeNumber_co | None = None,
-    *,
-    returned: L[True],
-    keepdims: L[True],
-) -> _Tuple2[ArrayT]: ...
-@overload  # inexact array-like, axis=None
+#
+@overload  # Nd T, axis=None  (default)
 def average[ScalarT: np.inexact](
     a: _ArrayLike[ScalarT],
     axis: None = None,
@@ -250,160 +476,214 @@ def average[ScalarT: np.inexact](
     *,
     keepdims: L[False] | _NoValueType = ...,
 ) -> ScalarT: ...
-@overload  # inexact array-like, axis=<given>
-def average[ScalarT: np.inexact](
-    a: _ArrayLike[ScalarT],
-    axis: int | tuple[int, ...],
-    weights: _ArrayLikeNumber_co | None = None,
-    returned: L[False] = False,
-    *,
-    keepdims: L[False] | _NoValueType = ...,
-) -> NDArray[ScalarT]: ...
-@overload  # inexact array-like, keepdims=True
-def average[ScalarT: np.inexact](
-    a: _ArrayLike[ScalarT],
-    axis: int | tuple[int, ...] | None = None,
-    weights: _ArrayLikeNumber_co | None = None,
-    returned: L[False] = False,
-    *,
-    keepdims: L[True],
-) -> NDArray[ScalarT]: ...
-@overload  # inexact array-like, axis=None, returned=True
-def average[ScalarT: np.inexact](
-    a: _ArrayLike[ScalarT],
-    axis: None = None,
-    weights: _ArrayLikeNumber_co | None = None,
-    *,
-    returned: L[True],
-    keepdims: L[False] | _NoValueType = ...,
-) -> _Tuple2[ScalarT]: ...
-@overload  # inexact array-like, axis=<given>, returned=True
-def average[ScalarT: np.inexact](
-    a: _ArrayLike[ScalarT],
-    axis: int | tuple[int, ...],
-    weights: _ArrayLikeNumber_co | None = None,
-    *,
-    returned: L[True],
-    keepdims: L[False] | _NoValueType = ...,
-) -> _Tuple2[NDArray[ScalarT]]: ...
-@overload  # inexact array-like, returned=True, keepdims=True
-def average[ScalarT: np.inexact](
-    a: _ArrayLike[ScalarT],
-    axis: int | tuple[int, ...] | None = None,
-    weights: _ArrayLikeNumber_co | None = None,
-    *,
-    returned: L[True],
-    keepdims: L[True],
-) -> _Tuple2[NDArray[ScalarT]]: ...
-@overload  # bool or integer array-like, axis=None
+@overload  # Nd +f64, axis=None  (default)
 def average(
-    a: _SeqND[float] | _ArrayLikeInt_co,
+    a: _DualArrayLike[np.dtype[_integer_co], float],
     axis: None = None,
-    weights: _ArrayLikeFloat_co | None = None,
+    weights: _ArrayLikeNumber_co | None = None,
     returned: L[False] = False,
     *,
     keepdims: L[False] | _NoValueType = ...,
 ) -> np.float64: ...
-@overload  # bool or integer array-like, axis=<given>
-def average(
-    a: _SeqND[float] | _ArrayLikeInt_co,
-    axis: int | tuple[int, ...],
-    weights: _ArrayLikeFloat_co | None = None,
-    returned: L[False] = False,
-    *,
-    keepdims: L[False] | _NoValueType = ...,
-) -> NDArray[np.float64]: ...
-@overload  # bool or integer array-like, keepdims=True
-def average(
-    a: _SeqND[float] | _ArrayLikeInt_co,
-    axis: int | tuple[int, ...] | None = None,
-    weights: _ArrayLikeFloat_co | None = None,
-    returned: L[False] = False,
-    *,
-    keepdims: L[True],
-) -> NDArray[np.float64]: ...
-@overload  # bool or integer array-like, axis=None, returned=True
-def average(
-    a: _SeqND[float] | _ArrayLikeInt_co,
-    axis: None = None,
-    weights: _ArrayLikeFloat_co | None = None,
-    *,
-    returned: L[True],
-    keepdims: L[False] | _NoValueType = ...,
-) -> _Tuple2[np.float64]: ...
-@overload  # bool or integer array-like, axis=<given>, returned=True
-def average(
-    a: _SeqND[float] | _ArrayLikeInt_co,
-    axis: int | tuple[int, ...],
-    weights: _ArrayLikeFloat_co | None = None,
-    *,
-    returned: L[True],
-    keepdims: L[False] | _NoValueType = ...,
-) -> _Tuple2[NDArray[np.float64]]: ...
-@overload  # bool or integer array-like, returned=True, keepdims=True
-def average(
-    a: _SeqND[float] | _ArrayLikeInt_co,
-    axis: int | tuple[int, ...] | None = None,
-    weights: _ArrayLikeFloat_co | None = None,
-    *,
-    returned: L[True],
-    keepdims: L[True],
-) -> _Tuple2[NDArray[np.float64]]: ...
-@overload  # complex array-like, axis=None
+@overload  # Nd ~complex, axis=None  (default)
 def average(
     a: _ListSeqND[complex],
     axis: None = None,
-    weights: _ArrayLikeComplex_co | None = None,
+    weights: _ArrayLikeNumber_co | None = None,
     returned: L[False] = False,
     *,
     keepdims: L[False] | _NoValueType = ...,
 ) -> np.complex128: ...
-@overload  # complex array-like, axis=<given>
-def average(
-    a: _ListSeqND[complex],
-    axis: int | tuple[int, ...],
-    weights: _ArrayLikeComplex_co | None = None,
+@overload  # ?d T, axis=<given>  (workaround)
+def average[ScalarT: np.inexact](
+    a: _ArrayNoD[ScalarT],
+    axis: _ShapeLike,
+    weights: _ArrayLikeNumber_co | None = None,
     returned: L[False] = False,
     *,
     keepdims: L[False] | _NoValueType = ...,
-) -> NDArray[np.complex128]: ...
-@overload  # complex array-like, keepdims=True
+) -> NDArray[ScalarT] | Any: ...
+@overload  # ?d +f64, axis=<given>  (workaround)
+def average(
+    a: _ArrayNoD[_integer_co],
+    axis: _ShapeLike,
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> NDArray[np.float64] | Any: ...
+@overload  # 1d T, axis=<given>
+def average[ScalarT: np.inexact](
+    a: _Array1D[ScalarT] | _Seq1D[ScalarT],
+    axis: int | tuple[int],
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> ScalarT: ...
+@overload  # 1d +f64, axis=<given>
+def average(
+    a: _Array1D[_integer_co] | _Seq1D[float],
+    axis: int | tuple[int],
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> np.float64: ...
+@overload  # 1d ~complex, axis=<given>
+def average(
+    a: list[complex],
+    axis: int | tuple[int],
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> np.complex128: ...
+@overload  # 2d T, axis=<given>
+def average[ScalarT: np.inexact](
+    a: _Array2D[ScalarT] | _Seq2D[ScalarT],
+    axis: int | tuple[int],
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> _Array1D[ScalarT]: ...
+@overload  # 2d +f64, axis=<given>
+def average(
+    a: _Array2D[_integer_co] | _Seq2D[float],
+    axis: int | tuple[int],
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> _Array1D[np.float64]: ...
+@overload  # 2d ~complex, axis=<given>
+def average(
+    a: _Seq1D[list[complex]],
+    axis: int | tuple[int],
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> _Array1D[np.complex128]: ...
+@overload  # 3d T, axis=<given>
+def average[ScalarT: np.inexact](
+    a: _Array3D[ScalarT] | _Seq3D[ScalarT],
+    axis: int | tuple[int],
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> _Array2D[ScalarT]: ...
+@overload  # 3d +f64, axis=<given>
+def average(
+    a: _Array3D[_integer_co] | _Seq3D[float],
+    axis: int | tuple[int],
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> _Array2D[np.float64]: ...
+@overload  # 3d ~complex, axis=<given>
+def average(
+    a: _Seq2D[list[complex]],
+    axis: int | tuple[int],
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> _Array2D[np.complex128]: ...
+@overload  # Nd T, keepdims=True
+def average[ArrayT: NDArray[np.inexact]](
+    a: ArrayT,
+    axis: _ShapeLike | None = None,
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[True],
+) -> ArrayT: ...
+@overload  # Nd +f64, keepdims=True
+def average[ShapeT: _Shape](
+    a: _Array[ShapeT, _integer_co],
+    axis: _ShapeLike | None = None,
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[True],
+) -> _Array[ShapeT, np.float64]: ...
+@overload  # Nd T, keepdims=True  (fallback)
+def average[ScalarT: np.inexact](
+    a: _ArrayLike[ScalarT],
+    axis: _ShapeLike | None = None,
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[True],
+) -> NDArray[ScalarT]: ...
+@overload  # Nd +f64, keepdims=True  (fallback)
+def average(
+    a: _DualArrayLike[np.dtype[_integer_co], float],
+    axis: _ShapeLike | None = None,
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[True],
+) -> NDArray[np.float64]: ...
+@overload  # Nd ~complex, keepdims=True  (fallback)
 def average(
     a: _ListSeqND[complex],
-    axis: int | tuple[int, ...] | None = None,
-    weights: _ArrayLikeComplex_co | None = None,
+    axis: _ShapeLike | None = None,
+    weights: _ArrayLikeNumber_co | None = None,
     returned: L[False] = False,
     *,
     keepdims: L[True],
 ) -> NDArray[np.complex128]: ...
-@overload  # complex array-like, axis=None, returned=True
+@overload  # fallback, keepdims=True
 def average(
-    a: _ListSeqND[complex],
-    axis: None = None,
-    weights: _ArrayLikeComplex_co | None = None,
+    a: _ArrayLikeNumber_co | _ArrayLikeObject_co,
+    axis: _ShapeLike | None = None,
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
     *,
-    returned: L[True],
-    keepdims: L[False] | _NoValueType = ...,
-) -> _Tuple2[np.complex128]: ...
-@overload  # complex array-like, axis=<given>, returned=True
-def average(
-    a: _ListSeqND[complex],
-    axis: int | tuple[int, ...],
-    weights: _ArrayLikeComplex_co | None = None,
-    *,
-    returned: L[True],
-    keepdims: L[False] | _NoValueType = ...,
-) -> _Tuple2[NDArray[np.complex128]]: ...
-@overload  # complex array-like, keepdims=True, returned=True
-def average(
-    a: _ListSeqND[complex],
-    axis: int | tuple[int, ...] | None = None,
-    weights: _ArrayLikeComplex_co | None = None,
-    *,
-    returned: L[True],
     keepdims: L[True],
-) -> _Tuple2[NDArray[np.complex128]]: ...
-@overload  # unknown, axis=None
+) -> NDArray[Any]: ...
+@overload  # Nd T, axis=<given>  (fallback)
+def average[ScalarT: np.inexact](
+    a: _ArrayLike[ScalarT],
+    axis: _ShapeLike,
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> NDArray[ScalarT] | Any: ...
+@overload  # Nd +f64, axis=<given>  (fallback)
+def average(
+    a: _DualArrayLike[np.dtype[_integer_co], float],
+    axis: _ShapeLike,
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> NDArray[np.float64] | Any: ...
+@overload  # Nd ~complex, axis=<given>  (fallback)
+def average(
+    a: _ListSeqND[complex],
+    axis: _ShapeLike,
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> NDArray[np.complex128] | Any: ...
+@overload  # fallback, axis=<given>
+def average(
+    a: _ArrayLikeNumber_co | _ArrayLikeObject_co,
+    axis: _ShapeLike,
+    weights: _ArrayLikeNumber_co | None = None,
+    returned: L[False] = False,
+    *,
+    keepdims: L[False] | _NoValueType = ...,
+) -> NDArray[Any] | Any: ...
+@overload  # fallback
 def average(
     a: _ArrayLikeNumber_co | _ArrayLikeObject_co,
     axis: None = None,
@@ -412,25 +692,25 @@ def average(
     *,
     keepdims: L[False] | _NoValueType = ...,
 ) -> Any: ...
-@overload  # unknown, axis=<given>
-def average(
-    a: _ArrayLikeNumber_co | _ArrayLikeObject_co,
-    axis: int | tuple[int, ...],
+@overload  # Nd T, axis=None, returned=True
+def average[ScalarT: np.inexact](
+    a: _ArrayLike[ScalarT],
+    axis: None = None,
     weights: _ArrayLikeNumber_co | None = None,
-    returned: L[False] = False,
     *,
+    returned: L[True],
     keepdims: L[False] | _NoValueType = ...,
-) -> np.ndarray: ...
-@overload  # unknown, keepdims=True
+) -> _Tuple2[ScalarT]: ...
+@overload  # Nd +f64, axis=None, returned=True
 def average(
-    a: _ArrayLikeNumber_co | _ArrayLikeObject_co,
-    axis: int | tuple[int, ...] | None = None,
+    a: _DualArrayLike[np.dtype[_integer_co], float],
+    axis: None = None,
     weights: _ArrayLikeNumber_co | None = None,
-    returned: L[False] = False,
     *,
-    keepdims: L[True],
-) -> np.ndarray: ...
-@overload  # unknown, axis=None, returned=True
+    returned: L[True],
+    keepdims: L[False] | _NoValueType = ...,
+) -> _Tuple2[np.float64]: ...
+@overload  # fallback, returned=True
 def average(
     a: _ArrayLikeNumber_co | _ArrayLikeObject_co,
     axis: None = None,
@@ -439,44 +719,98 @@ def average(
     returned: L[True],
     keepdims: L[False] | _NoValueType = ...,
 ) -> _Tuple2[Any]: ...
-@overload  # unknown, axis=<given>, returned=True
-def average(
-    a: _ArrayLikeNumber_co | _ArrayLikeObject_co,
-    axis: int | tuple[int, ...],
-    weights: _ArrayLikeNumber_co | None = None,
-    *,
-    returned: L[True],
-    keepdims: L[False] | _NoValueType = ...,
-) -> _Tuple2[np.ndarray]: ...
-@overload  # unknown, returned=True, keepdims=True
-def average(
-    a: _ArrayLikeNumber_co | _ArrayLikeObject_co,
-    axis: int | tuple[int, ...] | None = None,
+@overload  # Nd T, keepdims=True, returned=True  (fallback)
+def average[ScalarT: np.inexact](
+    a: _ArrayLike[ScalarT],
+    axis: _ShapeLike | None = None,
     weights: _ArrayLikeNumber_co | None = None,
     *,
     returned: L[True],
     keepdims: L[True],
-) -> _Tuple2[np.ndarray]: ...
+) -> _Tuple2[NDArray[ScalarT]]: ...
+@overload  # Nd +f64, keepdims=True, returned=True  (fallback)
+def average(
+    a: _DualArrayLike[np.dtype[_integer_co], float],
+    axis: _ShapeLike | None = None,
+    weights: _ArrayLikeNumber_co | None = None,
+    *,
+    returned: L[True],
+    keepdims: L[True],
+) -> _Tuple2[NDArray[np.float64]]: ...
+@overload  # fallback, keepdims=True, returned=True
+def average(
+    a: _ArrayLikeNumber_co | _ArrayLikeObject_co,
+    axis: _ShapeLike | None = None,
+    weights: _ArrayLikeNumber_co | None = None,
+    *,
+    returned: L[True],
+    keepdims: L[True],
+) -> _Tuple2[NDArray[Any]]: ...
+@overload  # Nd T, axis=<given>, returned=True  (fallback)
+def average[ScalarT: np.inexact](
+    a: _ArrayLike[ScalarT],
+    axis: _ShapeLike,
+    weights: _ArrayLikeNumber_co | None = None,
+    *,
+    returned: L[True],
+    keepdims: L[False] | _NoValueType = ...,
+) -> _Tuple2[NDArray[ScalarT] | Any]: ...
+@overload  # Nd +f64, axis=<given>, returned=True  (fallback)
+def average(
+    a: _DualArrayLike[np.dtype[_integer_co], float],
+    axis: _ShapeLike,
+    weights: _ArrayLikeNumber_co | None = None,
+    *,
+    returned: L[True],
+    keepdims: L[False] | _NoValueType = ...,
+) -> _Tuple2[NDArray[np.float64] | Any]: ...
+@overload  # fallback, axis=<given>, returned=True
+def average(
+    a: _ArrayLikeNumber_co | _ArrayLikeObject_co,
+    axis: _ShapeLike,
+    weights: _ArrayLikeNumber_co | None = None,
+    *,
+    returned: L[True],
+    keepdims: L[False] | _NoValueType = ...,
+) -> _Tuple2[NDArray[Any] | Any]: ...
 
 #
-@overload
+@overload  # Nd T
 def asarray_chkfinite[ShapeT: _Shape, DTypeT: np.dtype](
     a: np.ndarray[ShapeT, DTypeT], dtype: None = None, order: _OrderKACF = None
 ) -> np.ndarray[ShapeT, DTypeT]: ...
-@overload
+@overload  # Nd T, dtype=<known>
 def asarray_chkfinite[ShapeT: _Shape, ScalarT: np.generic](
-    a: np.ndarray[ShapeT], dtype: _DTypeLike[ScalarT], order: _OrderKACF = None
+    a: _Array[ShapeT, Any], dtype: _DTypeLike[ScalarT], order: _OrderKACF = None
 ) -> _Array[ShapeT, ScalarT]: ...
-@overload
+@overload  # Nd T, dtype=<unknown>
+def asarray_chkfinite[ShapeT: _Shape](
+    a: _Array[ShapeT, Any], dtype: DTypeLike, order: _OrderKACF = None
+) -> _Array[ShapeT, Any]: ...
+@overload  # ?d T
 def asarray_chkfinite[ScalarT: np.generic](
     a: _ArrayLike[ScalarT], dtype: None = None, order: _OrderKACF = None
 ) -> NDArray[ScalarT]: ...
-@overload
+@overload  # 1d bool
+def asarray_chkfinite(a: Sequence[bool], dtype: None = None, order: _OrderKACF = None) -> _Array1D[np.bool]: ...
+@overload  # 1d ~int
+def asarray_chkfinite(a: list[int], dtype: None = None, order: _OrderKACF = None) -> _Array1D[np.int_]: ...
+@overload  # 1d ~float
+def asarray_chkfinite(a: list[float], dtype: None = None, order: _OrderKACF = None) -> _Array1D[np.float64]: ...
+@overload  # 1d ~complex
+def asarray_chkfinite(a: list[complex], dtype: None = None, order: _OrderKACF = None) -> _Array1D[np.complex128]: ...
+@overload  # 1d, dtype=<known>
+def asarray_chkfinite[ScalarT: np.generic](
+    a: Sequence[complex | np.generic], dtype: _DTypeLike[ScalarT], order: _OrderKACF = None
+) -> _Array1D[ScalarT]: ...
+@overload  # 1d, dtype=<unknown>
+def asarray_chkfinite(a: Sequence[complex | np.generic], dtype: DTypeLike, order: _OrderKACF = None) -> _Array1D[Any]: ...
+@overload  # ?d, dtype=<known>
 def asarray_chkfinite[ScalarT: np.generic](
     a: object, dtype: _DTypeLike[ScalarT], order: _OrderKACF = None
 ) -> NDArray[ScalarT]: ...
-@overload
-def asarray_chkfinite(a: object, dtype: DTypeLike | None = None, order: _OrderKACF = None) -> NDArray[Incomplete]: ...
+@overload  # ?d  (fallback)
+def asarray_chkfinite(a: object, dtype: DTypeLike | None = None, order: _OrderKACF = None) -> NDArray[Any]: ...
 
 # NOTE: Contrary to the documentation, scalars are also accepted and treated as
 # `[condlist]`. And even though the documentation says these should be boolean, in
@@ -972,25 +1306,54 @@ def unwrap(
 ) -> np.ndarray: ...
 
 #
-@overload
-def sort_complex[ArrayT: NDArray[np.complexfloating]](a: ArrayT) -> ArrayT: ...
-@overload  # complex64, shape known
-def sort_complex[ShapeT: _Shape](a: _Array[ShapeT, np.int8 | np.uint8 | np.int16 | np.uint16]) -> _Array[ShapeT, np.complex64]: ...
-@overload  # complex64, shape unknown
-def sort_complex(a: _ArrayLike[np.int8 | np.uint8 | np.int16 | np.uint16]) -> NDArray[np.complex64]: ...
-@overload  # complex128, shape known
+@overload  # Nd T
+def sort_complex[ShapeT: _Shape, ScalarT: np.complexfloating](a: _Array[ShapeT, ScalarT]) -> _Array[ShapeT, ScalarT]: ...
+@overload  # Nd +c64
+def sort_complex[ShapeT: _Shape](a: _Array[ShapeT, _int16_co | _uint16_co]) -> _Array[ShapeT, np.complex64]: ...
+@overload  # Nd +c128
 def sort_complex[ShapeT: _Shape](a: _Array[ShapeT, _SortsToComplex128]) -> _Array[ShapeT, np.complex128]: ...
-@overload  # complex128, shape unknown
-def sort_complex(a: _ArrayLike[_SortsToComplex128]) -> NDArray[np.complex128]: ...
-@overload  # clongdouble, shape known
+@overload  # Nd ~c160
 def sort_complex[ShapeT: _Shape](a: _Array[ShapeT, np.longdouble]) -> _Array[ShapeT, np.clongdouble]: ...
-@overload  # clongdouble, shape unknown
+@overload  # 1d T
+def sort_complex[ScalarT: np.complexfloating](a: _Seq1D[ScalarT]) -> _Array1D[ScalarT]: ...
+@overload  # 1d +c64
+def sort_complex(a: _Seq1D[_int16_co] | _Seq1D[_uint16_co]) -> _Array1D[np.complex64]: ...
+@overload  # 1d +c128
+def sort_complex(a: _Seq1D[_SortsToComplex128 | complex]) -> _Array1D[np.complex128]: ...
+@overload  # 1d ~c160
+def sort_complex(a: _Seq1D[np.longdouble]) -> _Array1D[np.clongdouble]: ...
+@overload  # 2d T
+def sort_complex[ScalarT: np.complexfloating](a: _Seq2D[ScalarT]) -> _Array2D[ScalarT]: ...
+@overload  # 2d +c64
+def sort_complex(a: _Seq2D[_int16_co] | _Seq2D[_uint16_co]) -> _Array2D[np.complex64]: ...
+@overload  # 2d +c128
+def sort_complex(a: _Seq2D[_SortsToComplex128 | complex]) -> _Array2D[np.complex128]: ...
+@overload  # 2d ~c160
+def sort_complex(a: _Seq2D[np.longdouble]) -> _Array2D[np.clongdouble]: ...
+@overload  # ?d T
+def sort_complex[ScalarT: np.complexfloating](a: _ArrayLike[ScalarT]) -> NDArray[ScalarT]: ...
+@overload  # ?d +c64
+def sort_complex(a: _ArrayLike[_int16_co] | _ArrayLike[_uint16_co]) -> NDArray[np.complex64]: ...
+@overload  # ?d +c128
+def sort_complex(a: _ArrayLike[_SortsToComplex128] | _SeqND[complex]) -> NDArray[np.complex128]: ...
+@overload  # ?d ~c160
 def sort_complex(a: _ArrayLike[np.longdouble]) -> NDArray[np.clongdouble]: ...
-@overload  # builtin +complex, shape unknown
-def sort_complex(a: _SeqND[complex]) -> NDArray[np.complex128]: ...
+@overload  # ?d  (fallback)
+def sort_complex(a: _ToArrayND[np.number | np.bool | np.timedelta64 | np.object_, complex]) -> NDArray[Any]: ...
 
 #
-def trim_zeros[T](filt: _TrimZerosSequence[T], trim: L["f", "b", "fb", "bf"] = "fb", axis: _ShapeLike | None = None) -> T: ...
+@overload  # Nd T
+def trim_zeros[ArrayT: np.ndarray](
+    filt: ArrayT,
+    trim: L["f", "b", "fb", "bf"] = "fb",
+    axis: _ShapeLike | None = None,
+) -> ArrayT: ...
+@overload  # 1d T
+def trim_zeros[T](
+    filt: _TrimZerosSequence[T],
+    trim: L["f", "b", "fb", "bf"] = "fb",
+    axis: _ShapeLike | None = None,
+) -> T: ...
 
 # NOTE: keep in sync with `corrcoef`
 @overload  # ?d, known inexact scalar-type >=64 precision, y=<given>.
@@ -2906,125 +3269,132 @@ def quantile[ArrayT: np.ndarray](
 ) -> ArrayT: ...
 
 #
-@overload  # ?d, known inexact/timedelta64 scalar-type
+@overload  # ?d +f64  (workaround)
+def trapezoid(
+    y: _ArrayNoD[_float64_co],
+    x: _ArrayLikeFloat_co | None = None,
+    dx: float = 1.0,
+    axis: SupportsIndex = -1,
+) -> NDArray[np.float64] | np.float64: ...
+@overload  # ?d ~complex  (workaround)
+def trapezoid(
+    y: _ArrayNoD[np.complex128],
+    x: _ArrayLikeComplex128_co | None = None,
+    dx: complex = 1.0,
+    axis: SupportsIndex = -1,
+) -> NDArray[np.complex128] | np.complex128: ...
+@overload  # ?d T  (workaround)
 def trapezoid[ScalarT: np.inexact | np.timedelta64](
     y: _ArrayNoD[ScalarT],
-    x: _ArrayLike[ScalarT] | _ArrayLikeFloat_co | None = None,
+    x: _ArrayLike[ScalarT] | None = None,
     dx: float = 1.0,
     axis: SupportsIndex = -1,
 ) -> NDArray[ScalarT] | ScalarT: ...
-@overload  # ?d, casts to float64
-def trapezoid(
-    y: _ArrayNoD[_integer_co],
-    x: _ArrayLikeFloat_co | None = None,
-    dx: float = 1.0,
-    axis: SupportsIndex = -1,
-) -> NDArray[np.float64] | np.float64: ...
-@overload  # strict 1d, known inexact/timedelta64 scalar-type
-def trapezoid[ScalarT: np.inexact | np.timedelta64](
-    y: _Array1D[ScalarT],
-    x: _Array1D[ScalarT] | _Seq1D[float] | None = None,
-    dx: float = 1.0,
-    axis: SupportsIndex = -1,
-) -> ScalarT: ...
-@overload  # strict 1d, casts to float64
+@overload  # 1d +f64
 def trapezoid(
     y: _Array1D[_float64_co] | _Seq1D[float],
-    x: _Array1D[_float64_co] | _Seq1D[float] | None = None,
+    x: _ArrayLikeFloat_co | None = None,
     dx: float = 1.0,
     axis: SupportsIndex = -1,
 ) -> np.float64: ...
-@overload  # strict 1d, casts to complex128 (`list` prevents overlapping overloads)
+@overload  # 1d ~complex
 def trapezoid(
-    y: list[complex],
-    x: _Seq1D[complex] | None = None,
+    y: _Array1D[np.complex128] | list[complex],
+    x: _ArrayLikeComplex128_co | None = None,
     dx: complex = 1.0,
     axis: SupportsIndex = -1,
 ) -> np.complex128: ...
-@overload  # strict 1d, casts to complex128
-def trapezoid(
-    y: _Seq1D[complex],
-    x: list[complex],
-    dx: complex = 1.0,
-    axis: SupportsIndex = -1,
-) -> np.complex128: ...
-@overload  # strict 2d, known inexact/timedelta64 scalar-type
+@overload  # 1d T
 def trapezoid[ScalarT: np.inexact | np.timedelta64](
-    y: _Array2D[ScalarT],
-    x: _ArrayMax2D[ScalarT] | _Seq2D[float] | _Seq1D[float] | None = None,
+    y: _Array1D[ScalarT] | _Seq1D[ScalarT],
+    x: _ArrayLike[ScalarT] | None = None,
     dx: float = 1.0,
     axis: SupportsIndex = -1,
 ) -> ScalarT: ...
-@overload  # strict 2d, casts to float64
+@overload  # 2d +f64
 def trapezoid(
     y: _Array2D[_float64_co] | _Seq2D[float],
-    x: _ArrayMax2D[_float64_co] | _Seq2D[float] | _Seq1D[float] | None = None,
+    x: _ArrayLikeFloat_co | None = None,
     dx: float = 1.0,
     axis: SupportsIndex = -1,
-) -> np.float64: ...
-@overload  # strict 2d, casts to complex128 (`list` prevents overlapping overloads)
+) -> _Array1D[np.float64]: ...
+@overload  # 2d ~complex
 def trapezoid(
-    y: _Seq1D[list[complex]],
-    x: _Seq2D[complex] | _Seq1D[complex] | None = None,
+    y: _Array2D[np.complex128] | _Seq1D[list[complex]],
+    x: _ArrayLikeComplex128_co | None = None,
     dx: complex = 1.0,
     axis: SupportsIndex = -1,
-) -> np.complex128: ...
-@overload  # strict 2d, casts to complex128
-def trapezoid(
-    y: _Seq2D[complex] | _Seq1D[complex],
-    x: _Seq1D[list[complex]],
-    dx: complex = 1.0,
-    axis: SupportsIndex = -1,
-) -> np.complex128: ...
-@overload
+) -> _Array1D[np.complex128]: ...
+@overload  # 2d T
 def trapezoid[ScalarT: np.inexact | np.timedelta64](
-    y: _ArrayLike[ScalarT],
-    x: _ArrayLike[ScalarT] | _ArrayLikeInt_co | None = None,
+    y: _Array2D[ScalarT] | _Seq2D[ScalarT],
+    x: _ArrayLike[ScalarT] | None = None,
+    dx: float = 1.0,
+    axis: SupportsIndex = -1,
+) -> _Array1D[ScalarT]: ...
+@overload  # 3d +f64
+def trapezoid(
+    y: _Array3D[_float64_co] | _Seq3D[float],
+    x: _ArrayLikeFloat_co | None = None,
+    dx: float = 1.0,
+    axis: SupportsIndex = -1,
+) -> _Array2D[np.float64]: ...
+@overload  # 3d ~complex
+def trapezoid(
+    y: _Array3D[np.complex128] | _Seq2D[list[complex]],
+    x: _ArrayLikeComplex128_co | None = None,
     dx: complex = 1.0,
     axis: SupportsIndex = -1,
-) -> NDArray[ScalarT] | ScalarT: ...
-@overload
+) -> _Array2D[np.complex128]: ...
+@overload  # 3d T
+def trapezoid[ScalarT: np.inexact | np.timedelta64](
+    y: _Array3D[ScalarT] | _Seq3D[ScalarT],
+    x: _ArrayLike[ScalarT] | None = None,
+    dx: float = 1.0,
+    axis: SupportsIndex = -1,
+) -> _Array2D[ScalarT]: ...
+@overload  # Nd +f64  (fallback)
 def trapezoid(
-    y: _ArrayLike[_float64_co],
+    y: _DualArrayLike[np.dtype[_float64_co], float],
     x: _ArrayLikeFloat_co | None = None,
     dx: float = 1.0,
     axis: SupportsIndex = -1,
 ) -> NDArray[np.float64] | np.float64: ...
-@overload
+@overload  # Nd ~complex  (fallback)
 def trapezoid(
-    y: _ArrayLike[np.complex128],
-    x: _ArrayLikeComplex_co | None = None,
-    dx: float = 1.0,
+    y: _ArrayLike[np.complex128] | _ListSeqND[complex],
+    x: _ArrayLikeComplex128_co | None = None,
+    dx: complex = 1.0,
     axis: SupportsIndex = -1,
 ) -> NDArray[np.complex128] | np.complex128: ...
-@overload
-def trapezoid(
-    y: _ArrayLikeComplex_co,
-    x: _ArrayLike[np.complex128],
+@overload  # Nd T  (fallback)
+def trapezoid[ScalarT: np.inexact | np.timedelta64](
+    y: _ArrayLike[ScalarT],
+    x: _ArrayLike[ScalarT] | None = None,
     dx: float = 1.0,
     axis: SupportsIndex = -1,
-) -> NDArray[np.complex128] | np.complex128: ...
-@overload
+) -> NDArray[ScalarT] | ScalarT: ...
+@overload  # Nd ~object_
 def trapezoid(
     y: _ArrayLikeObject_co,
     x: _ArrayLikeObject_co | _ArrayLikeFloat_co | None = None,
     dx: float = 1.0,
     axis: SupportsIndex = -1,
 ) -> NDArray[np.object_] | Any: ...
-@overload
+@overload  # 1d ~object_
 def trapezoid[T](
     y: _Seq1D[_SupportsRMulFloat[T]],
     x: _Seq1D[_SupportsRMulFloat[T] | T] | None = None,
     dx: complex = 1.0,
     axis: SupportsIndex = -1,
 ) -> T: ...
-@overload
+@overload  # fallback
 def trapezoid(
     y: _ArrayLikeComplex_co | _ArrayLike[np.timedelta64 | np.object_],
     x: _ArrayLikeComplex_co | _ArrayLike[np.timedelta64 | np.object_] | None = None,
     dx: complex = 1.0,
     axis: SupportsIndex = -1,
-) -> Incomplete: ...
+) -> NDArray[Any] | Any: ...
 
 #
 @overload  # 0d

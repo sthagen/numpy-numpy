@@ -11,7 +11,7 @@ from fractions import Fraction
 from types import EllipsisType, ModuleType, MappingProxyType, GenericAlias
 from uuid import UUID
 
-from numpy.__config__ import show as show_config
+from numpy.__config__ import show_config
 from numpy._pytesttester import PytestTester
 from numpy._core._internal import _ctypes
 
@@ -10748,7 +10748,9 @@ class generic(_ArrayOrScalarCommon, Generic[_ItemT_co]):
         self, key: tuple[None, None, None], /
     ) -> ndarray[tuple[int, int, int], _dtype[Self]]: ...
     @overload  # Limited support for (None,) * N > 3
-    def __getitem__(self, key: tuple[None, ...], /) -> NDArray[Self]: ...
+    def __getitem__(
+        self, key: tuple[None, None, None, None, *tuple[None, ...]], /
+    ) -> NDArray[Self]: ...
 
     #
     @overload
@@ -13192,7 +13194,9 @@ class void(flexible[bytes | tuple[Any, ...]]):  # type: ignore[misc]
         self, key: tuple[None, None, None], /
     ) -> ndarray[tuple[int, int, int], dtype[Self]]: ...
     @overload  # Limited support for (None,) * N > 3
-    def __getitem__(self, key: tuple[None, ...], /) -> NDArray[Self]: ...
+    def __getitem__(
+        self, key: tuple[None, None, None, None, *tuple[None, ...]], /
+    ) -> NDArray[Self]: ...
     @overload
     def __getitem__(self, key: str | SupportsIndex, /) -> Any: ...
     @overload
@@ -13358,6 +13362,24 @@ class broadcast:
     def __iter__(self) -> Self: ...
     def reset(self) -> None: ...
 
+#
+@overload  # 0d T
+def from_dlpack[ScalarT: number | bool_](
+    x: ScalarT,
+    /,
+    *,
+    device: L["cpu"] | None = None,
+    copy: py_bool | None = None,
+) -> ndarray[tuple[()], _dtype[ScalarT]]: ...
+@overload  # Nd T
+def from_dlpack[ShapeT: _Shape, DTypeT: _dtype[number | bool_]](
+    x: ndarray[ShapeT, DTypeT],
+    /,
+    *,
+    device: L["cpu"] | None = None,
+    copy: py_bool | None = None,
+) -> ndarray[ShapeT, DTypeT]: ...
+@overload  # ?d
 def from_dlpack(
     x: _SupportsDLPack[None],
     /,
